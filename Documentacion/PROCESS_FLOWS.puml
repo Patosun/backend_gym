@@ -1,0 +1,211 @@
+@startuml GymMaster_Process_Flow
+
+!theme plain
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+skinparam participant {
+  BackgroundColor #E3F2FD
+  BorderColor #1976D2
+  FontColor #0D47A1
+}
+
+skinparam actor {
+  BackgroundColor #FFF3E0
+  BorderColor #F57C00
+  FontColor #E65100
+}
+
+title
+  <size:20><b>🏋️‍♂️ GymMaster - Flujos de Proceso Principales</b></size>
+  <size:14>Diagramas de Secuencia del Sistema</size>
+end title
+
+!startsub MEMBER_REGISTRATION
+participant "Admin/Employee" as AE
+participant "Sistema" as SYS
+participant "Base de Datos" as DB
+
+== 👤 Registro de Nuevo Miembro ==
+
+AE -> SYS: POST /auth/register\n(role: MEMBER)
+activate SYS
+
+SYS -> SYS: Validar datos de entrada\n(Zod schema)
+SYS -> SYS: Hash password\n(bcrypt)
+SYS -> DB: Crear User
+activate DB
+DB -> DB: Insertar en tabla users
+DB --> SYS: user_id
+deactivate DB
+
+SYS -> SYS: Generar QR único
+SYS -> DB: Crear Member
+activate DB
+DB -> DB: Insertar en tabla members\n(qrCode, qrCodeExpiry)
+DB --> SYS: member_id
+deactivate DB
+
+SYS -> DB: Crear Membership inicial
+activate DB
+DB --> SYS: membership_id
+deactivate DB
+
+SYS --> AE: 201 Created\n{user, member, qrCode}
+deactivate SYS
+
+note right of SYS
+  <b>QR Code único por miembro</b>
+  - UUID generado automáticamente
+  - Expira cada 24 horas
+  - Se regenera en cada check-in
+end note
+!endsub
+
+!startsub CHECKIN_PROCESS
+actor "Miembro" as M
+participant "App Móvil/QR" as APP
+participant "Sistema" as SYS2
+participant "Base de Datos" as DB2
+
+== 📱 Proceso de Check-in con QR ==
+
+M -> APP: Mostrar código QR
+APP -> SYS2: POST /checkins\n{qrCode, branchId}
+activate SYS2
+
+SYS2 -> DB2: Buscar member por QR
+activate DB2
+DB2 --> SYS2: member_data
+deactivate DB2
+
+alt QR válido y no expirado
+  SYS2 -> SYS2: Validar membership activa
+  SYS2 -> DB2: Crear CheckIn
+  activate DB2
+  DB2 --> SYS2: checkin_id
+  deactivate DB2
+  
+  SYS2 -> SYS2: Generar nuevo QR\n(seguridad)
+  SYS2 -> DB2: Actualizar qrCode
+  activate DB2
+  DB2 --> SYS2: success
+  deactivate DB2
+  
+  SYS2 --> APP: 200 OK\n{checkin, newQR}
+else QR inválido o expirado
+  SYS2 --> APP: 400 Bad Request\n{error: "QR inválido"}
+end
+
+deactivate SYS2
+
+note right of SYS2
+  <b>Seguridad del QR</b>
+  - Nuevo QR en cada check-in
+  - Validación de expiración
+  - Check-in solo en sucursales activas
+end note
+!endsub
+
+!startsub PAYMENT_PROCESS
+participant "Empleado" as EMP
+participant "Sistema" as SYS3
+participant "Base de Datos" as DB3
+
+== 💰 Proceso de Pago de Membresía ==
+
+EMP -> SYS3: POST /payments\n{memberId, amount, method}
+activate SYS3
+
+SYS3 -> DB3: Buscar member y membership
+activate DB3
+DB3 --> SYS3: member_data
+deactivate DB3
+
+SYS3 -> SYS3: Validar monto y método\n(CASH o QR únicamente)
+
+alt Pago en efectivo
+  SYS3 -> DB3: Crear Payment\n(status: COMPLETED)
+  activate DB3
+  DB3 --> SYS3: payment_id
+  deactivate DB3
+  
+  SYS3 -> DB3: Actualizar membership\n(extender fechas)
+  activate DB3
+  DB3 --> SYS3: updated_membership
+  deactivate DB3
+  
+  SYS3 --> EMP: 200 OK\n{payment, receipt}
+
+else Pago QR
+  SYS3 -> DB3: Crear Payment\n(status: PENDING)
+  activate DB3
+  DB3 --> SYS3: payment_id
+  deactivate DB3
+  
+  SYS3 --> EMP: 200 OK\n{payment, qr_reference}
+  note right: Empleado debe confirmar\npago externamente
+end
+
+deactivate SYS3
+
+note right of SYS3
+  <b>Métodos de Pago</b>
+  - Solo CASH y QR
+  - No integración con gateways
+  - Confirmación manual requerida
+end note
+!endsub
+
+!startsub CLASS_RESERVATION
+actor "Miembro" as M2
+participant "App" as APP2
+participant "Sistema" as SYS4
+participant "Base de Datos" as DB4
+
+== 🏃‍♀️ Reserva de Clase ==
+
+M2 -> APP2: Seleccionar clase
+APP2 -> SYS4: GET /classes\n{branchId, date}
+activate SYS4
+
+SYS4 -> DB4: Buscar clases disponibles
+activate DB4
+DB4 --> SYS4: available_classes
+deactivate DB4
+
+SYS4 --> APP2: 200 OK\n{classes}
+deactivate SYS4
+
+M2 -> APP2: Reservar clase
+APP2 -> SYS4: POST /reservations\n{classId, memberId}
+activate SYS4
+
+SYS4 -> DB4: Verificar capacidad
+activate DB4
+DB4 --> SYS4: current_reservations
+deactivate DB4
+
+alt Cupo disponible
+  SYS4 -> DB4: Crear Reservation
+  activate DB4
+  DB4 --> SYS4: reservation_id
+  deactivate DB4
+  
+  SYS4 --> APP2: 201 Created\n{reservation}
+else Sin cupo
+  SYS4 --> APP2: 409 Conflict\n{error: "Clase llena"}
+end
+
+deactivate SYS4
+
+note right of SYS4
+  <b>Gestión de Capacidad</b>
+  - Control automático de cupos
+  - Reservas únicas por clase
+  - Cancelación permitida
+end note
+!endsub
+
+@enduml

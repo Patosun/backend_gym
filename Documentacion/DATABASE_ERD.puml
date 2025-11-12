@@ -1,0 +1,294 @@
+@startuml GymMaster_Database_ERD
+
+!define ENTITY(e) entity e <<entity>>
+!define ENUM(e) enum e <<enumeration>>
+!define PRIMARY_KEY(x) <b><color:#b8861b><&key></color> x</b>
+!define FOREIGN_KEY(x) <color:#aaaaaa><&key></color> x
+!define UNIQUE(x) <color:#b8861b>○</color> x
+!define NOT_NULL(x) <color:#222222>●</color> x
+
+' Color scheme
+skinparam entity {
+  BackgroundColor #E1F5FE
+  BorderColor #0277BD
+  FontColor #01579B
+}
+
+skinparam enum {
+  BackgroundColor #F3E5F5
+  BorderColor #7B1FA2
+  FontColor #4A148C
+}
+
+' Title
+title
+  <size:20><b>🏋️‍♂️ GymMaster Database - Entity Relationship Diagram</b></size>
+  <size:14>Sistema de Administración de Gimnasio</size>
+end title
+
+' Enumerations
+ENUM(UserRole) {
+  ADMIN
+  EMPLOYEE
+  TRAINER
+  MEMBER
+}
+
+ENUM(MembershipStatus) {
+  ACTIVE
+  EXPIRED
+  SUSPENDED
+  CANCELLED
+}
+
+ENUM(PaymentMethod) {
+  CASH
+  QR
+}
+
+ENUM(PaymentStatus) {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+ENUM(ClassStatus) {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+ENUM(ReservationStatus) {
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+' Main Entities
+ENTITY(User) {
+  PRIMARY_KEY(id) : UUID
+  UNIQUE(email) : VARCHAR(255)
+  NOT_NULL(password) : VARCHAR(255)
+  NOT_NULL(firstName) : VARCHAR(100)
+  NOT_NULL(lastName) : VARCHAR(100)
+  phone : VARCHAR(20)
+  photo : TEXT
+  NOT_NULL(role) : UserRole
+  NOT_NULL(isActive) : BOOLEAN
+  NOT_NULL(emailVerified) : BOOLEAN
+  lastLogin : TIMESTAMP
+  NOT_NULL(createdAt) : TIMESTAMP
+  NOT_NULL(updatedAt) : TIMESTAMP
+}
+
+ENTITY(Branch) {
+  PRIMARY_KEY(id) : UUID
+  NOT_NULL(name) : VARCHAR(100)
+  NOT_NULL(address) : TEXT
+  phone : VARCHAR(20)
+  email : VARCHAR(255)
+  NOT_NULL(city) : VARCHAR(100)
+  NOT_NULL(state) : VARCHAR(100)
+  zipCode : VARCHAR(10)
+  NOT_NULL(isActive) : BOOLEAN
+  NOT_NULL(openingTime) : VARCHAR(5)
+  NOT_NULL(closingTime) : VARCHAR(5)
+  FOREIGN_KEY(createdById) : UUID
+  NOT_NULL(createdAt) : TIMESTAMP
+  NOT_NULL(updatedAt) : TIMESTAMP
+}
+
+ENTITY(Employee) {
+  PRIMARY_KEY(id) : UUID
+  FOREIGN_KEY(userId) : UUID <<unique>>
+  FOREIGN_KEY(branchId) : UUID
+  NOT_NULL(position) : VARCHAR(100)
+  salary : DECIMAL(10,2)
+  NOT_NULL(hireDate) : DATE
+  NOT_NULL(isActive) : BOOLEAN
+  NOT_NULL(createdAt) : TIMESTAMP
+  NOT_NULL(updatedAt) : TIMESTAMP
+}
+
+ENTITY(Trainer) {
+  PRIMARY_KEY(id) : UUID
+  FOREIGN_KEY(userId) : UUID <<unique>>
+  FOREIGN_KEY(branchId) : UUID
+  NOT_NULL(specialties) : TEXT[]
+  NOT_NULL(experience) : INTEGER
+  certification : TEXT
+  hourlyRate : DECIMAL(8,2)
+  NOT_NULL(isActive) : BOOLEAN
+  bio : TEXT
+  NOT_NULL(createdAt) : TIMESTAMP
+  NOT_NULL(updatedAt) : TIMESTAMP
+}
+
+ENTITY(Member) {
+  PRIMARY_KEY(id) : UUID
+  FOREIGN_KEY(userId) : UUID <<unique>>
+  UNIQUE(membershipNumber) : VARCHAR(50)
+  dateOfBirth : DATE
+  emergencyContact : VARCHAR(100)
+  emergencyPhone : VARCHAR(20)
+  medicalNotes : TEXT
+  UNIQUE(qrCode) : UUID
+  NOT_NULL(qrCodeExpiry) : TIMESTAMP
+  NOT_NULL(isActive) : BOOLEAN
+  NOT_NULL(joinDate) : DATE
+  NOT_NULL(createdAt) : TIMESTAMP
+  NOT_NULL(updatedAt) : TIMESTAMP
+}
+
+ENTITY(MembershipType) {
+  PRIMARY_KEY(id) : UUID
+  UNIQUE(name) : VARCHAR(100)
+  description : TEXT
+  NOT_NULL(durationDays) : INTEGER
+  NOT_NULL(price) : DECIMAL(10,2)
+  NOT_NULL(features) : TEXT[]
+  NOT_NULL(isActive) : BOOLEAN
+  maxClasses : INTEGER
+  NOT_NULL(createdAt) : TIMESTAMP
+  NOT_NULL(updatedAt) : TIMESTAMP
+}
+
+ENTITY(Membership) {
+  PRIMARY_KEY(id) : UUID
+  FOREIGN_KEY(memberId) : UUID
+  FOREIGN_KEY(membershipTypeId) : UUID
+  NOT_NULL(startDate) : DATE
+  NOT_NULL(endDate) : DATE
+  NOT_NULL(status) : MembershipStatus
+  NOT_NULL(autoRenew) : BOOLEAN
+  notes : TEXT
+  NOT_NULL(createdAt) : TIMESTAMP
+  NOT_NULL(updatedAt) : TIMESTAMP
+}
+
+ENTITY(CheckIn) {
+  PRIMARY_KEY(id) : UUID
+  FOREIGN_KEY(memberId) : UUID
+  FOREIGN_KEY(branchId) : UUID
+  NOT_NULL(checkInAt) : TIMESTAMP
+  checkOutAt : TIMESTAMP
+  notes : TEXT
+  NOT_NULL(createdAt) : TIMESTAMP
+}
+
+ENTITY(Class) {
+  PRIMARY_KEY(id) : UUID
+  NOT_NULL(name) : VARCHAR(100)
+  description : TEXT
+  FOREIGN_KEY(branchId) : UUID
+  FOREIGN_KEY(trainerId) : UUID
+  NOT_NULL(capacity) : INTEGER
+  NOT_NULL(duration) : INTEGER
+  NOT_NULL(startTime) : TIMESTAMP
+  NOT_NULL(endTime) : TIMESTAMP
+  NOT_NULL(status) : ClassStatus
+  NOT_NULL(isRecurring) : BOOLEAN
+  price : DECIMAL(8,2)
+  NOT_NULL(createdAt) : TIMESTAMP
+  NOT_NULL(updatedAt) : TIMESTAMP
+}
+
+ENTITY(Reservation) {
+  PRIMARY_KEY(id) : UUID
+  FOREIGN_KEY(memberId) : UUID
+  FOREIGN_KEY(classId) : UUID
+  FOREIGN_KEY(trainerId) : UUID
+  NOT_NULL(status) : ReservationStatus
+  notes : TEXT
+  NOT_NULL(createdAt) : TIMESTAMP
+  NOT_NULL(updatedAt) : TIMESTAMP
+  --
+  UNIQUE(memberId, classId)
+}
+
+ENTITY(Payment) {
+  PRIMARY_KEY(id) : UUID
+  FOREIGN_KEY(memberId) : UUID
+  FOREIGN_KEY(membershipId) : UUID
+  FOREIGN_KEY(branchId) : UUID
+  NOT_NULL(amount) : DECIMAL(10,2)
+  NOT_NULL(method) : PaymentMethod
+  NOT_NULL(status) : PaymentStatus
+  description : TEXT
+  reference : VARCHAR(100)
+  NOT_NULL(paymentDate) : TIMESTAMP
+  dueDate : TIMESTAMP
+  notes : TEXT
+  NOT_NULL(createdAt) : TIMESTAMP
+  NOT_NULL(updatedAt) : TIMESTAMP
+}
+
+ENTITY(AuditLog) {
+  PRIMARY_KEY(id) : UUID
+  FOREIGN_KEY(userId) : UUID
+  NOT_NULL(action) : VARCHAR(50)
+  NOT_NULL(entity) : VARCHAR(50)
+  entityId : UUID
+  oldValues : JSON
+  newValues : JSON
+  NOT_NULL(timestamp) : TIMESTAMP
+  ipAddress : VARCHAR(45)
+  userAgent : TEXT
+}
+
+' Relationships
+User ||--o{ Branch : "creates"
+User ||--o| Employee : "is"
+User ||--o| Trainer : "is"
+User ||--o| Member : "is"
+User ||--o{ AuditLog : "performs"
+
+Branch ||--o{ Employee : "employs"
+Branch ||--o{ Trainer : "hosts"
+Branch ||--o{ CheckIn : "receives"
+Branch ||--o{ Class : "holds"
+Branch ||--o{ Payment : "processes"
+
+Member ||--o{ Membership : "has"
+Member ||--o{ CheckIn : "performs"
+Member ||--o{ Reservation : "makes"
+Member ||--o{ Payment : "makes"
+
+MembershipType ||--o{ Membership : "defines"
+
+Membership ||--o{ Payment : "generates"
+
+Trainer ||--o{ Class : "teaches"
+Trainer ||--o{ Reservation : "assists"
+
+Class ||--o{ Reservation : "accepts"
+
+' Enum relationships (shown as dependencies)
+User ..> UserRole : uses
+Membership ..> MembershipStatus : has
+Payment ..> PaymentMethod : uses
+Payment ..> PaymentStatus : has
+Class ..> ClassStatus : has
+Reservation ..> ReservationStatus : has
+
+' Layout hints
+User -[hidden]right- Branch
+Employee -[hidden]down- Trainer
+Member -[hidden]down- MembershipType
+CheckIn -[hidden]right- Class
+Payment -[hidden]down- AuditLog
+
+' Notes
+note top of User : <b>Central entity</b>\nAll users start here\nRole determines profile type
+
+note bottom of Member : <b>QR Code System</b>\nUnique QR per member\nExpires every 24h\nUsed for check-ins
+
+note right of CheckIn : <b>Multi-branch Support</b>\nMembers can check-in\nat any branch
+
+note bottom of Payment : <b>Payment Methods</b>\nCash or QR only\nNo online gateways\nNo electronic billing
+
+note top of AuditLog : <b>Complete Audit Trail</b>\nTracks all system changes\nIncludes user, IP, timestamp
+
+@enduml

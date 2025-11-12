@@ -1,0 +1,197 @@
+@startuml GymMaster_System_Architecture
+
+!theme plain
+skinparam component {
+  BackgroundColor #E8F5E8
+  BorderColor #2E7D32
+  FontColor #1B5E20
+}
+
+skinparam node {
+  BackgroundColor #FFF3E0
+  BorderColor #F57C00
+  FontColor #E65100
+}
+
+skinparam database {
+  BackgroundColor #E3F2FD
+  BorderColor #1976D2
+  FontColor #0D47A1
+}
+
+skinparam interface {
+  BackgroundColor #FCE4EC
+  BorderColor #C2185B
+  FontColor #880E4F
+}
+
+title
+  <size:20><b>🏗️ GymMaster - Arquitectura del Sistema</b></size>
+  <size:14>Componentes y Tecnologías</size>
+end title
+
+' Client Applications
+node "🖥️ Aplicación Desktop" as DESKTOP {
+  component "C# WPF" as WPF
+  component "Admin Panel" as ADMIN
+  component "Employee Interface" as EMP
+}
+
+node "📱 Aplicación Móvil" as MOBILE {
+  component "React Native" as RN
+  component "Member App" as MEMBER
+  component "QR Scanner" as QR
+}
+
+' API Gateway/Load Balancer
+node "🌐 API Gateway" as GATEWAY {
+  interface "HTTPS :443" as HTTPS
+  interface "Rate Limiting" as RATE
+  interface "CORS" as CORS
+}
+
+' Backend Services
+node "🚀 Backend Server" as BACKEND {
+  component "Node.js + Express" as EXPRESS {
+    component "Authentication\nMiddleware" as AUTH
+    component "Authorization\nMiddleware" as AUTHZ
+    component "Validation\nMiddleware" as VALID
+    component "Error Handling\nMiddleware" as ERROR
+  }
+  
+  package "🏗️ Modules" {
+    component "Auth Module" as AUTH_MOD
+    component "Branches Module" as BRANCH_MOD
+    component "Check-ins Module" as CHECKIN_MOD
+    component "Reports Module" as REPORT_MOD
+  }
+  
+  package "🛠️ Services" {
+    component "User Service" as USER_SVC
+    component "QR Service" as QR_SVC
+    component "Payment Service" as PAY_SVC
+    component "Notification Service" as NOTIF_SVC
+  }
+  
+  component "Prisma ORM" as PRISMA
+}
+
+' Database Layer
+database "🗄️ PostgreSQL" as DB {
+  component "Users & Auth" as DB_AUTH
+  component "Memberships" as DB_MEMBER
+  component "Classes & Reservations" as DB_CLASS
+  component "Payments & Billing" as DB_PAY
+  component "Audit Logs" as DB_AUDIT
+}
+
+' External Services
+cloud "☁️ External Services" as EXTERNAL {
+  component "Email Service\n(Future)" as EMAIL
+  component "SMS Service\n(Future)" as SMS
+  component "Backup Storage\n(Future)" as BACKUP
+}
+
+' Security Components
+package "🔒 Security Layer" as SECURITY {
+  component "JWT Tokens" as JWT
+  component "bcrypt Hashing" as BCRYPT
+  component "Helmet Security" as HELMET
+  component "Input Sanitization" as SANITIZE
+}
+
+' Monitoring & Logging
+package "📊 Monitoring" as MONITORING {
+  component "Winston Logger" as LOGGER
+  component "Error Tracking" as ERROR_TRACK
+  component "Performance Metrics" as METRICS
+}
+
+' Documentation
+package "📚 Documentation" as DOCS {
+  component "Swagger UI" as SWAGGER
+  component "API Documentation" as API_DOCS
+  component "Database Docs" as DB_DOCS
+}
+
+' Connections
+WPF --> HTTPS : "Admin/Employee\nOperations"
+RN --> HTTPS : "Member\nOperations"
+
+HTTPS --> EXPRESS : "REST API\nRequests"
+
+EXPRESS --> AUTH_MOD : ""
+EXPRESS --> BRANCH_MOD : ""
+EXPRESS --> CHECKIN_MOD : ""
+EXPRESS --> REPORT_MOD : ""
+
+AUTH_MOD --> USER_SVC : ""
+BRANCH_MOD --> USER_SVC : ""
+CHECKIN_MOD --> QR_SVC : ""
+REPORT_MOD --> PAY_SVC : ""
+
+USER_SVC --> PRISMA : ""
+QR_SVC --> PRISMA : ""
+PAY_SVC --> PRISMA : ""
+
+PRISMA --> DB : "SQL Queries"
+
+' Security connections
+AUTH --> JWT : ""
+EXPRESS --> HELMET : ""
+EXPRESS --> SANITIZE : ""
+USER_SVC --> BCRYPT : ""
+
+' Monitoring connections
+EXPRESS --> LOGGER : ""
+EXPRESS --> ERROR_TRACK : ""
+EXPRESS --> METRICS : ""
+
+' Documentation connections
+EXPRESS --> SWAGGER : ""
+
+' External connections (future)
+NOTIF_SVC -.-> EMAIL : "Future"
+NOTIF_SVC -.-> SMS : "Future"
+DB -.-> BACKUP : "Future"
+
+' Layout hints
+DESKTOP -[hidden]right- MOBILE
+AUTH -[hidden]down- AUTHZ
+DB_AUTH -[hidden]right- DB_MEMBER
+
+' Notes
+note top of EXPRESS
+  <b>🏃‍♂️ Performance</b>
+  - Async/await patterns
+  - Connection pooling
+  - Response caching
+  - Request compression
+end note
+
+note bottom of DB
+  <b>🗄️ Database Features</b>
+  - ACID transactions
+  - Referential integrity
+  - Indexes optimization
+  - Audit trail complete
+end note
+
+note right of SECURITY
+  <b>🔐 Security Measures</b>
+  - Role-based access control
+  - Input validation & sanitization
+  - Rate limiting
+  - Secure password hashing
+  - JWT with short expiration
+end note
+
+note left of DOCS
+  <b>📖 Documentation</b>
+  - Interactive API testing
+  - Complete schema docs
+  - Code examples
+  - Setup instructions
+end note
+
+@enduml

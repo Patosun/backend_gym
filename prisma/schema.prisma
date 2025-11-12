@@ -1,0 +1,321 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum UserRole {
+  ADMIN
+  EMPLOYEE
+  TRAINER
+  MEMBER
+}
+
+enum MembershipStatus {
+  ACTIVE
+  EXPIRED
+  SUSPENDED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  QR
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum ClassStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ReservationStatus {
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+// Models
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password      String
+  firstName     String
+  lastName      String
+  phone         String?
+  photo         String?
+  role          UserRole @default(MEMBER)
+  isActive      Boolean  @default(true)
+  emailVerified Boolean  @default(false)
+  lastLogin     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  employee      Employee?
+  trainer       Trainer?
+  member        Member?
+  createdBranches Branch[] @relation("CreatedBy")
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  isRevoked Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model Branch {
+  id          String  @id @default(uuid())
+  name        String
+  address     String
+  phone       String?
+  email       String?
+  city        String
+  state       String
+  zipCode     String?
+  isActive    Boolean @default(true)
+  openingTime String  // Format: "06:00"
+  closingTime String  // Format: "23:00"
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  createdBy   User       @relation("CreatedBy", fields: [createdById], references: [id])
+  employees   Employee[]
+  trainers    Trainer[]
+  checkIns    CheckIn[]
+  classes     Class[]
+  payments    Payment[]
+
+  @@map("branches")
+}
+
+model Employee {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  branchId   String
+  position   String
+  salary     Decimal?
+  hireDate   DateTime
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch Branch @relation(fields: [branchId], references: [id])
+
+  @@map("employees")
+}
+
+model Trainer {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  branchId      String
+  specialties   String[] // Array of specialties
+  experience    Int      // Years of experience
+  certification String?
+  hourlyRate    Decimal?
+  isActive      Boolean  @default(true)
+  bio           String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch      Branch        @relation(fields: [branchId], references: [id])
+  classes     Class[]
+  reservations Reservation[]
+
+  @@map("trainers")
+}
+
+model Member {
+  id              String    @id @default(uuid())
+  userId          String    @unique
+  membershipNumber String   @unique
+  dateOfBirth     DateTime?
+  emergencyContact String?
+  emergencyPhone  String?
+  medicalNotes    String?
+  qrCode          String    @unique // QR code for check-ins
+  qrCodeExpiry    DateTime
+  isActive        Boolean   @default(true)
+  joinDate        DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memberships  Membership[]
+  checkIns     CheckIn[]
+  payments     Payment[]
+  reservations Reservation[]
+
+  @@map("members")
+}
+
+model MembershipType {
+  id           String  @id @default(uuid())
+  name         String  @unique
+  description  String?
+  durationDays Int     // Duration in days
+  price        Decimal
+  features     String[] // Array of features
+  isActive     Boolean @default(true)
+  maxClasses   Int?    // Max classes per month (null = unlimited)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  memberships Membership[]
+
+  @@map("membership_types")
+}
+
+model Membership {
+  id               String           @id @default(uuid())
+  memberId         String
+  membershipTypeId String
+  startDate        DateTime
+  endDate          DateTime
+  status           MembershipStatus @default(ACTIVE)
+  autoRenew        Boolean          @default(false)
+  notes            String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  // Relations
+  member         Member         @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  membershipType MembershipType @relation(fields: [membershipTypeId], references: [id])
+  payments       Payment[]
+
+  @@map("memberships")
+}
+
+model CheckIn {
+  id        String   @id @default(uuid())
+  memberId  String
+  branchId  String
+  checkInAt DateTime @default(now())
+  checkOutAt DateTime?
+  notes     String?
+  createdAt DateTime @default(now())
+
+  // Relations
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  branch Branch @relation(fields: [branchId], references: [id])
+
+  @@map("check_ins")
+}
+
+model Class {
+  id          String      @id @default(uuid())
+  name        String
+  description String?
+  branchId    String
+  trainerId   String
+  capacity    Int
+  duration    Int         // Duration in minutes
+  startTime   DateTime
+  endTime     DateTime
+  status      ClassStatus @default(SCHEDULED)
+  isRecurring Boolean     @default(false)
+  price       Decimal?    // Additional price for special classes
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  branch       Branch        @relation(fields: [branchId], references: [id])
+  trainer      Trainer       @relation(fields: [trainerId], references: [id])
+  reservations Reservation[]
+
+  @@map("classes")
+}
+
+model Reservation {
+  id        String            @id @default(uuid())
+  memberId  String
+  classId   String
+  trainerId String?
+  status    ReservationStatus @default(CONFIRMED)
+  notes     String?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  // Relations
+  member  Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  class   Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  trainer Trainer? @relation(fields: [trainerId], references: [id])
+
+  @@unique([memberId, classId])
+  @@map("reservations")
+}
+
+model Payment {
+  id           String        @id @default(uuid())
+  memberId     String
+  membershipId String?
+  branchId     String
+  amount       Decimal
+  method       PaymentMethod
+  status       PaymentStatus @default(PENDING)
+  description  String?
+  reference    String?       // QR reference or receipt number
+  paymentDate  DateTime      @default(now())
+  dueDate      DateTime?
+  notes        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  // Relations
+  member     Member      @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  membership Membership? @relation(fields: [membershipId], references: [id])
+  branch     Branch      @relation(fields: [branchId], references: [id])
+
+  @@map("payments")
+}
+
+// Indexes for better performance
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  oldValues Json?
+  newValues Json?
+  timestamp DateTime @default(now())
+  ipAddress String?
+  userAgent String?
+
+  @@map("audit_logs")
+}
