@@ -52,6 +52,21 @@ class AuthService {
     // Hash de la contraseña
     const hashedPassword = await bcrypt.hash(password, parseInt(process.env.BCRYPT_ROUNDS) || 12);
 
+    // Para roles que requieren branchId, asegurar que exista uno válido
+    let defaultBranchId = null;
+    if (['EMPLOYEE', 'ADMIN', 'TRAINER'].includes(role) && !userData.branchId) {
+      const defaultBranch = await prisma.branch.findFirst({
+        where: { isActive: true },
+        select: { id: true }
+      });
+      
+      if (!defaultBranch) {
+        throw new ValidationError('No hay sucursales disponibles. Contacte al administrador.');
+      }
+      
+      defaultBranchId = defaultBranch.id;
+    }
+
     try {
       // Crear usuario en una transacción
       const result = await prisma.$transaction(async (prisma) => {
@@ -91,6 +106,10 @@ class AuthService {
             data: {
               userId: user.id,
               membershipNumber,
+              dateOfBirth: userData.dateOfBirth || null,
+              emergencyContact: userData.emergencyContact || null,
+              emergencyPhone: userData.emergencyPhone || null,
+              medicalNotes: userData.medicalNotes || null,
               qrCode,
               qrCodeExpiry,
               joinDate: new Date(),
@@ -106,15 +125,14 @@ class AuthService {
           };
         } else if (role === 'EMPLOYEE' || role === 'ADMIN') {
           // Para empleados y admins, crear registro de empleado
-          const employeeNumber = `EMP-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
-          
           await prisma.employee.create({
             data: {
               userId: user.id,
-              employeeNumber,
-              position: role === 'ADMIN' ? 'Administrador' : 'Empleado',
-              salary: 0, // Será configurado después
-              hireDate: new Date()
+              branchId: userData.branchId || defaultBranchId,
+              position: userData.position || (role === 'ADMIN' ? 'Administrador' : 'Empleado'),
+              salary: userData.salary || 0,
+              hireDate: new Date(),
+              isActive: true
             }
           });
         } else if (role === 'TRAINER') {
@@ -122,10 +140,12 @@ class AuthService {
           await prisma.trainer.create({
             data: {
               userId: user.id,
-              specialties: [],
-              experience: 0,
-              certifications: [],
-              hourlyRate: 0,
+              branchId: userData.branchId || defaultBranchId,
+              specialties: userData.specialties || [],
+              experience: userData.experience || 0,
+              certification: userData.certification || '',
+              hourlyRate: userData.hourlyRate || 0,
+              bio: userData.bio || '',
               isActive: true
             }
           });
@@ -284,6 +304,55 @@ class AuthService {
     // Remover la contraseña del resultado
     const { password, ...userWithoutPassword } = user;
     return userWithoutPassword;
+  }
+
+  /**
+   * Obtener usuario por ID con tokens (para 2FA)
+   */
+  async getUserById(userId) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+        is2FAEnabled: true
+      }
+    });
+
+    if (!user) {
+      throw new NotFoundError('Usuario no encontrado');
+    }
+
+    // Generar tokens
+    const { accessToken, refreshToken } = generateTokenPair({ 
+      userId: user.id,
+      email: user.email,
+      role: user.role
+    });
+    
+    // Guardar refresh token en la base de datos
+    const refreshTokenExpiry = new Date();
+    refreshTokenExpiry.setDate(refreshTokenExpiry.getDate() + 7); // 7 días
+
+    await prisma.refreshToken.create({
+      data: {
+        token: refreshToken,
+        userId: user.id,
+        expiresAt: refreshTokenExpiry
+      }
+    });
+
+    return {
+      user,
+      accessToken,
+      refreshToken
+    };
   }
 
   /**

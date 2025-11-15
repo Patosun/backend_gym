@@ -98,7 +98,7 @@ const createMembershipTypeSchema = z.object({
   durationDays: z.number().int().min(1),
   price: z.number().min(0),
   features: z.array(z.string()).default([]),
-  maxClasses: z.number().int().min(0).optional(),
+  maxClasses: z.number().int().min(0).nullable().optional(),
   isActive: z.boolean().default(true)
 });
 
@@ -108,7 +108,7 @@ const updateMembershipTypeSchema = z.object({
   durationDays: z.number().int().min(1).optional(),
   price: z.number().min(0).optional(),
   features: z.array(z.string()).optional(),
-  maxClasses: z.number().int().min(0).optional(),
+  maxClasses: z.number().int().min(0).nullable().optional(),
   isActive: z.boolean().optional()
 });
 
@@ -162,7 +162,7 @@ const membershipController = {
       if (isActive !== undefined) filters.isActive = isActive === 'true';
 
       const types = await membershipService.getAllMembershipTypes(filters);
-      res.json(types);
+      res.json({ membershipTypes: types });
     } catch (error) {
       console.error('Error getting membership types:', error);
       res.status(500).json({ error: 'Error interno del servidor' });

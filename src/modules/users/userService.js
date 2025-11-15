@@ -355,6 +355,43 @@ const userService = {
       }
       throw error;
     }
+  },
+
+  /**
+   * Obtener todos los trainers activos
+   */
+  async getAllTrainers() {
+    return await prisma.trainer.findMany({
+      where: { 
+        isActive: true,
+        user: {
+          isActive: true
+        }
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            photo: true
+          }
+        },
+        branch: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      },
+      orderBy: {
+        user: {
+          firstName: 'asc'
+        }
+      }
+    });
   }
 };
 

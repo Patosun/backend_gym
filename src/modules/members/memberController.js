@@ -315,6 +315,56 @@ const memberController = {
 
   /**
    * @swagger
+   * /api/members/user/{userId}:
+   *   get:
+   *     summary: Obtener miembro por userId
+   *     tags: [Members]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: userId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *     responses:
+   *       200:
+   *         description: Datos del miembro
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Member'
+   *       404:
+   *         description: Miembro no encontrado
+   */
+  async getMemberByUserId(req, res) {
+    try {
+      const { userId } = req.params;
+      const member = await memberService.getMemberByUserId(userId);
+      
+      if (!member) {
+        return res.status(404).json({ 
+          success: false,
+          error: 'Miembro no encontrado' 
+        });
+      }
+
+      res.json({
+        success: true,
+        data: member
+      });
+    } catch (error) {
+      console.error('Error getting member by userId:', error);
+      res.status(500).json({ 
+        success: false,
+        error: 'Error interno del servidor' 
+      });
+    }
+  },
+
+  /**
+   * @swagger
    * /api/members/{id}:
    *   put:
    *     summary: Actualizar miembro

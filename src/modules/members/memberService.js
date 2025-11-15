@@ -164,6 +164,34 @@ const memberService = {
   },
 
   /**
+   * Obtener miembro por userId
+   */
+  async getMemberByUserId(userId) {
+    return await prisma.member.findUnique({
+      where: { userId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            photo: true,
+            isActive: true
+          }
+        },
+        memberships: {
+          include: {
+            membershipType: true
+          },
+          orderBy: { createdAt: 'desc' }
+        }
+      }
+    });
+  },
+
+  /**
    * Obtener miembro por código QR
    */
   async getMemberByQR(qrCode) {

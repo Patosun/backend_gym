@@ -1,4 +1,5 @@
 const userService = require('./userService');
+const authService = require('../auth/authService');
 const { z } = require('zod');
 
 /**
@@ -98,7 +99,190 @@ const changePasswordSchema = z.object({
   newPassword: z.string().min(6).max(100)
 });
 
+const createUserSchema = z.object({
+  email: z.string().email('Email inválido'),
+  firstName: z.string().min(1, 'Nombre requerido'),
+  lastName: z.string().min(1, 'Apellido requerido'),
+  phone: z.string().optional(),
+  role: z.enum(['ADMIN', 'EMPLOYEE', 'TRAINER', 'MEMBER'], {
+    required_error: 'Rol requerido',
+    invalid_type_error: 'Rol inválido'
+  }),
+  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
+  // Campos específicos por rol
+  branchId: z.string().uuid().optional(), // Para EMPLOYEE y TRAINER
+  specialties: z.array(z.string()).optional(), // Para TRAINER
+  experience: z.number().optional(), // Para TRAINER
+  certification: z.string().optional(), // Para TRAINER
+  hourlyRate: z.number().optional(), // Para TRAINER
+  position: z.string().optional(), // Para EMPLOYEE
+  salary: z.number().optional(), // Para EMPLOYEE
+  dateOfBirth: z.string().optional(), // Para MEMBER
+  emergencyContact: z.string().optional(), // Para MEMBER
+  emergencyPhone: z.string().optional(), // Para MEMBER
+  medicalNotes: z.string().optional() // Para MEMBER
+});
+
 const userController = {
+  /**
+   * @swagger
+   * /api/users:
+   *   post:
+   *     summary: Crear un nuevo usuario
+   *     tags: [Users]
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - email
+   *               - firstName
+   *               - lastName
+   *               - role
+   *               - password
+   *             properties:
+   *               email:
+   *                 type: string
+   *                 format: email
+   *                 description: Email del usuario
+   *               firstName:
+   *                 type: string
+   *                 description: Nombre del usuario
+   *               lastName:
+   *                 type: string
+   *                 description: Apellido del usuario
+   *               phone:
+   *                 type: string
+   *                 description: Teléfono del usuario
+   *               role:
+   *                 type: string
+   *                 enum: [ADMIN, EMPLOYEE, TRAINER, MEMBER]
+   *                 description: Rol del usuario
+   *               password:
+   *                 type: string
+   *                 minLength: 6
+   *                 description: Contraseña del usuario
+   *               branchId:
+   *                 type: string
+   *                 format: uuid
+   *                 description: ID de la sucursal (para EMPLOYEE y TRAINER)
+   *               specialties:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Especialidades del entrenador
+   *               experience:
+   *                 type: number
+   *                 description: Años de experiencia del entrenador
+   *               certification:
+   *                 type: string
+   *                 description: Certificaciones del entrenador
+   *               hourlyRate:
+   *                 type: number
+   *                 description: Tarifa por hora del entrenador
+   *               position:
+   *                 type: string
+   *                 description: Posición del empleado
+   *               salary:
+   *                 type: number
+   *                 description: Salario del empleado
+   *               dateOfBirth:
+   *                 type: string
+   *                 format: date
+   *                 description: Fecha de nacimiento del miembro
+   *               emergencyContact:
+   *                 type: string
+   *                 description: Contacto de emergencia del miembro
+   *               emergencyPhone:
+   *                 type: string
+   *                 description: Teléfono de emergencia del miembro
+   *               medicalNotes:
+   *                 type: string
+   *                 description: Notas médicas del miembro
+   *     responses:
+   *       201:
+   *         description: Usuario creado exitosamente
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/User'
+   *       400:
+   *         description: Datos inválidos
+   *       401:
+   *         description: No autorizado
+   *       403:
+   *         description: Sin permisos
+   *       409:
+   *         description: Email ya registrado
+   */
+  async createUser(req, res) {
+    try {
+      // Validar datos de entrada
+      const validatedData = createUserSchema.parse(req.body);
+
+      // Verificar si el email ya existe
+      const emailAvailable = await authService.checkEmailAvailability(validatedData.email);
+      if (!emailAvailable) {
+        return res.status(409).json({
+          success: false,
+          error: 'El email ya está registrado'
+        });
+      }
+
+      // Crear el usuario usando el servicio de autenticación
+      const result = await authService.register({
+        email: validatedData.email,
+        password: validatedData.password,
+        firstName: validatedData.firstName,
+        lastName: validatedData.lastName,
+        phone: validatedData.phone,
+        role: validatedData.role,
+        // Datos específicos por rol
+        branchId: validatedData.branchId,
+        specialties: validatedData.specialties,
+        experience: validatedData.experience,
+        certification: validatedData.certification,
+        hourlyRate: validatedData.hourlyRate,
+        position: validatedData.position,
+        salary: validatedData.salary,
+        dateOfBirth: validatedData.dateOfBirth ? new Date(validatedData.dateOfBirth) : undefined,
+        emergencyContact: validatedData.emergencyContact,
+        emergencyPhone: validatedData.emergencyPhone,
+        medicalNotes: validatedData.medicalNotes
+      });
+
+      res.status(201).json({
+        success: true,
+        data: {
+          user: result.user
+        },
+        message: 'Usuario creado exitosamente'
+      });
+
+    } catch (error) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({
+          success: false,
+          error: 'Datos inválidos',
+          details: error.errors.map(err => ({
+            field: err.path.join('.'),
+            message: err.message
+          }))
+        });
+      }
+
+      console.error('Error creating user:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor'
+      });
+    }
+  },
+
   /**
    * @swagger
    * /api/users:
@@ -184,6 +368,32 @@ const userController = {
       res.json(result);
     } catch (error) {
       console.error('Error getting users:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  },
+
+  /**
+   * @swagger
+   * /api/trainers:
+   *   get:
+   *     summary: Obtener todos los entrenadores activos
+   *     tags: [Users, Trainers]
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: Lista de entrenadores activos
+   *       401:
+   *         description: No autorizado
+   *       500:
+   *         description: Error interno del servidor
+   */
+  async getAllTrainers(req, res) {
+    try {
+      const trainers = await userService.getAllTrainers();
+      res.json({ trainers });
+    } catch (error) {
+      console.error('Error getting trainers:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   },

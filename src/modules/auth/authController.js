@@ -1,4 +1,5 @@
 const authService = require('./authService');
+const twoFactorService = require('../../services/twoFactorService');
 const { asyncHandler } = require('../../middlewares/validation');
 
 class AuthController {
@@ -49,15 +50,37 @@ class AuthController {
     const { email, password } = req.body;
     const result = await authService.login(email, password);
     
-    res.json({
-      success: true,
-      message: 'Login exitoso',
-      data: {
-        user: result.user,
-        accessToken: result.accessToken,
-        refreshToken: result.refreshToken
-      }
-    });
+    // Verificar si el usuario tiene 2FA habilitado
+    const is2FAEnabled = await twoFactorService.is2FAEnabled(result.user.id);
+    
+    if (is2FAEnabled) {
+      // Generar y enviar código OTP
+      console.log('🔐 [LOGIN] Llamando generateAndSendOTP desde login');
+      await twoFactorService.generateAndSendOTP(result.user.id);
+      
+      // Responder indicando que se requiere OTP
+      res.json({
+        success: true,
+        requires2FA: true,
+        message: 'Código de verificación enviado por email',
+        data: {
+          userId: result.user.id,
+          email: result.user.email
+        }
+      });
+    } else {
+      // Login normal sin 2FA
+      res.json({
+        success: true,
+        requires2FA: false,
+        message: 'Login exitoso',
+        data: {
+          user: result.user,
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken
+        }
+      });
+    }
   });
 
   /**
@@ -203,6 +226,81 @@ class AuthController {
     res.json({
       success: true,
       message: result.message
+    });
+  });
+
+  /**
+   * @desc    Verificar código OTP para 2FA
+   * @route   POST /api/auth/verify-otp
+   * @access  Public
+   */
+  verifyOTP = asyncHandler(async (req, res) => {
+    const { userId, otpCode } = req.body;
+    
+    // Verificar el código OTP
+    await twoFactorService.verifyOTP(userId, otpCode);
+    
+    // Obtener datos completos del usuario para generar tokens
+    const result = await authService.getUserById(userId);
+    
+    res.json({
+      success: true,
+      message: 'Verificación 2FA exitosa',
+      data: {
+        user: result.user,
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken
+      }
+    });
+  });
+
+  /**
+   * @desc    Habilitar 2FA para el usuario autenticado
+   * @route   POST /api/auth/enable-2fa
+   * @access  Private
+   */
+  enable2FA = asyncHandler(async (req, res) => {
+    const result = await twoFactorService.enable2FA(req.user.id);
+    
+    res.json({
+      success: true,
+      message: result.message,
+      data: result.user
+    });
+  });
+
+  /**
+   * @desc    Deshabilitar 2FA para el usuario autenticado
+   * @route   POST /api/auth/disable-2fa
+   * @access  Private
+   */
+  disable2FA = asyncHandler(async (req, res) => {
+    const result = await twoFactorService.disable2FA(req.user.id);
+    
+    res.json({
+      success: true,
+      message: result.message,
+      data: result.user
+    });
+  });
+
+  /**
+   * @desc    Reenviar código OTP
+   * @route   POST /api/auth/resend-otp
+   * @access  Public
+   */
+  resendOTP = asyncHandler(async (req, res) => {
+    const { userId } = req.body;
+    
+    console.log('🔐 [RESEND] Llamando generateAndSendOTP desde resend');
+    const result = await twoFactorService.generateAndSendOTP(userId);
+    
+    res.json({
+      success: true,
+      message: result.message,
+      data: {
+        expiresAt: result.expiresAt
+      }
     });
   });
 }

@@ -144,6 +144,38 @@ class CheckInController {
       data: activeCheckIn
     });
   });
+
+  /**
+   * @desc    Realizar check-in administrativo por memberId
+   * @route   POST /api/checkins/admin/checkin
+   * @access  Private (Admin/Employee)
+   */
+  adminCheckIn = asyncHandler(async (req, res) => {
+    const { memberId, branchId } = req.body;
+    const checkIn = await checkInService.adminCheckIn(memberId, branchId);
+    
+    res.status(201).json({
+      success: true,
+      message: `Check-in realizado para ${checkIn.member.user.firstName} ${checkIn.member.user.lastName}`,
+      data: checkIn
+    });
+  });
+
+  /**
+   * @desc    Realizar check-out administrativo por memberId
+   * @route   POST /api/checkins/admin/checkout
+   * @access  Private (Admin/Employee)
+   */
+  adminCheckOut = asyncHandler(async (req, res) => {
+    const { memberId } = req.body;
+    const checkIn = await checkInService.adminCheckOut(memberId);
+    
+    res.json({
+      success: true,
+      message: `Check-out realizado para ${checkIn.member.user.firstName} ${checkIn.member.user.lastName}`,
+      data: checkIn
+    });
+  });
 }
 
 module.exports = new CheckInController();

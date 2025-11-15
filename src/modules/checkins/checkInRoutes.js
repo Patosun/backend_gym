@@ -285,4 +285,75 @@ router.put('/:id/checkout',
   checkInController.checkOut
 );
 
+/**
+ * @swagger
+ * /api/checkins/admin/checkin:
+ *   post:
+ *     summary: Realizar check-in administrativo por memberId
+ *     tags: [Check-ins]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - memberId
+ *               - branchId
+ *             properties:
+ *               memberId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: ID del miembro
+ *               branchId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: ID de la sucursal
+ *     responses:
+ *       201:
+ *         description: Check-in realizado exitosamente
+ *       400:
+ *         description: Error en la validación
+ */
+router.post('/admin/checkin', 
+  authenticateToken, 
+  authorize(['ADMIN', 'EMPLOYEE']),
+  checkInController.adminCheckIn
+);
+
+/**
+ * @swagger
+ * /api/checkins/admin/checkout:
+ *   post:
+ *     summary: Realizar check-out administrativo por memberId
+ *     tags: [Check-ins]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - memberId
+ *             properties:
+ *               memberId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: ID del miembro
+ *     responses:
+ *       200:
+ *         description: Check-out realizado exitosamente
+ *       400:
+ *         description: Error en la validación
+ */
+router.post('/admin/checkout', 
+  authenticateToken, 
+  authorize(['ADMIN', 'EMPLOYEE']),
+  checkInController.adminCheckOut
+);
+
 module.exports = router;

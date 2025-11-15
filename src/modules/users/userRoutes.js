@@ -14,8 +14,14 @@ const router = express.Router();
 // Rutas que requieren autenticación
 router.use(authenticateToken);
 
+// POST /api/users - Crear nuevo usuario (solo ADMIN)
+router.post('/', authorize(['ADMIN']), userController.createUser);
+
 // GET /api/users - Obtener todos los usuarios
 router.get('/', authorize(['ADMIN', 'EMPLOYEE']), userController.getAllUsers);
+
+// GET /api/trainers - Obtener todos los entrenadores
+router.get('/trainers', authorize(['ADMIN', 'EMPLOYEE']), userController.getAllTrainers);
 
 // GET /api/users/stats - Estadísticas de usuarios
 router.get('/stats', authorize(['ADMIN', 'EMPLOYEE']), userController.getUserStats);

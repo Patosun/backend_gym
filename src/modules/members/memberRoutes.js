@@ -26,6 +26,9 @@ router.get('/stats', authorize(['ADMIN', 'EMPLOYEE']), memberController.getMembe
 // GET /api/members/qr/:qrCode - Obtener miembro por QR
 router.get('/qr/:qrCode', memberController.getMemberByQR);
 
+// GET /api/members/user/:userId - Obtener miembro por userId
+router.get('/user/:userId', memberController.getMemberByUserId);
+
 // GET /api/members/:id - Obtener miembro por ID
 router.get('/:id', memberController.getMemberById);
 

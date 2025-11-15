@@ -63,6 +63,13 @@ model User {
   isActive      Boolean  @default(true)
   emailVerified Boolean  @default(false)
   lastLogin     DateTime?
+  
+  // 2FA fields
+  is2FAEnabled  Boolean  @default(false)
+  otpSecret     String?
+  otpCode       String?
+  otpExpiry     DateTime?
+  
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

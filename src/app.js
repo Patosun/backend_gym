@@ -23,6 +23,7 @@ const paymentRoutes = require('./modules/payments/paymentRoutes');
 const classRoutes = require('./modules/classes/classRoutes');
 const checkInRoutes = require('./modules/checkins/checkInRoutes');
 const reportRoutes = require('./modules/reports/reportRoutes');
+const dashboardRoutes = require('./modules/dashboard/dashboardRoutes');
 
 const app = express();
 
@@ -159,6 +160,7 @@ app.use(`${API_PREFIX}/classes`, classRoutes);
 app.use(`${API_PREFIX}`, classRoutes); // Para rutas como /my-reservations y /reservations/:id
 app.use(`${API_PREFIX}/checkins`, checkInRoutes);
 app.use(`${API_PREFIX}/reports`, reportRoutes);
+app.use(`${API_PREFIX}/dashboard`, dashboardRoutes);
 
 // Welcome route
 app.get('/', (req, res) => {

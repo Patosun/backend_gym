@@ -274,4 +274,87 @@ router.post('/generate-qr', authenticateToken, authorize(['MEMBER']), authContro
  */
 router.post('/logout-session', authenticateToken, authController.logout);
 
+/**
+ * @swagger
+ * /api/auth/verify-otp:
+ *   post:
+ *     summary: Verificar código OTP para 2FA
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *               - otpCode
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 format: uuid
+ *               otpCode:
+ *                 type: string
+ *                 minLength: 6
+ *                 maxLength: 6
+ *     responses:
+ *       200:
+ *         description: Código verificado exitosamente
+ *       400:
+ *         description: Código inválido o expirado
+ */
+router.post('/verify-otp', authController.verifyOTP);
+
+/**
+ * @swagger
+ * /api/auth/resend-otp:
+ *   post:
+ *     summary: Reenviar código OTP
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 format: uuid
+ *     responses:
+ *       200:
+ *         description: Código reenviado exitosamente
+ */
+router.post('/resend-otp', authController.resendOTP);
+
+/**
+ * @swagger
+ * /api/auth/enable-2fa:
+ *   post:
+ *     summary: Habilitar autenticación de dos factores
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 2FA habilitado exitosamente
+ */
+router.post('/enable-2fa', authenticateToken, authController.enable2FA);
+
+/**
+ * @swagger
+ * /api/auth/disable-2fa:
+ *   post:
+ *     summary: Deshabilitar autenticación de dos factores
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 2FA deshabilitado exitosamente
+ */
+router.post('/disable-2fa', authenticateToken, authController.disable2FA);
+
 module.exports = router;

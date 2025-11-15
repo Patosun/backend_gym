@@ -406,13 +406,18 @@ const membershipService = {
       total,
       active,
       expired,
+      suspended,
+      cancelled,
       expiringSoon,
       typeStats,
-      monthlyRevenue
+      monthlyRevenue,
+      averageDuration
     ] = await Promise.all([
       prisma.membership.count(),
       prisma.membership.count({ where: { status: 'ACTIVE' } }),
       prisma.membership.count({ where: { status: 'EXPIRED' } }),
+      prisma.membership.count({ where: { status: 'SUSPENDED' } }),
+      prisma.membership.count({ where: { status: 'CANCELLED' } }),
       prisma.membership.count({
         where: {
           status: 'ACTIVE',
@@ -422,7 +427,11 @@ const membershipService = {
       prisma.membership.groupBy({
         by: ['membershipTypeId'],
         where: { status: 'ACTIVE' },
-        _count: { membershipTypeId: true }
+        _count: { membershipTypeId: true },
+        orderBy: {
+          _count: { membershipTypeId: 'desc' }
+        },
+        take: 1
       }),
       prisma.payment.aggregate({
         where: {
@@ -430,31 +439,63 @@ const membershipService = {
           paymentDate: { gte: startOfMonth }
         },
         _sum: { amount: true }
+      }),
+      prisma.membership.aggregate({
+        where: {
+          status: { in: ['EXPIRED', 'CANCELLED'] }
+        },
+        _avg: {
+          duration: true // Calculado como días
+        }
       })
     ]);
 
-    // Obtener nombres de tipos para estadísticas
-    const membershipTypes = await prisma.membershipType.findMany({
-      select: { id: true, name: true }
+    // Obtener el tipo de membresía más popular
+    let popularMembershipType = 'N/A';
+    if (typeStats.length > 0) {
+      const topType = await prisma.membershipType.findUnique({
+        where: { id: typeStats[0].membershipTypeId },
+        select: { name: true }
+      });
+      popularMembershipType = topType?.name || 'N/A';
+    }
+
+    // Calcular duración promedio en días
+    let avgDurationDays = 30; // Default
+    const completedMemberships = await prisma.membership.findMany({
+      where: {
+        status: { in: ['EXPIRED', 'CANCELLED'] },
+        startDate: { not: null },
+        endDate: { not: null }
+      },
+      select: {
+        startDate: true,
+        endDate: true
+      },
+      take: 100 // Muestra para cálculo
     });
 
-    const byType = {};
-    typeStats.forEach(stat => {
-      const type = membershipTypes.find(t => t.id === stat.membershipTypeId);
-      if (type) {
-        byType[type.name] = stat._count.membershipTypeId;
-      }
-    });
+    if (completedMemberships.length > 0) {
+      const totalDays = completedMemberships.reduce((sum, membership) => {
+        const start = new Date(membership.startDate);
+        const end = new Date(membership.endDate);
+        const diffTime = end.getTime() - start.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return sum + diffDays;
+      }, 0);
+      avgDurationDays = Math.round(totalDays / completedMemberships.length);
+    }
 
     return {
       total,
       active,
       expired,
-      expiringSoon,
-      byType,
-      revenue: {
-        thisMonth: monthlyRevenue._sum.amount || 0
-      }
+      suspended,
+      cancelled,
+      expiringThisWeek: expiringSoon,
+      monthlyRevenue: monthlyRevenue._sum.amount || 0,
+      popularMembershipType,
+      averageDuration: avgDurationDays
     };
   },
 
