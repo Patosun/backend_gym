@@ -1,8 +1,10 @@
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const { generateTokenPair, verifyRefreshToken } = require('../../utils/jwt');
 const { AuthError, ValidationError, ConflictError, NotFoundError } = require('../../utils/errors');
 const prisma = require('../../config/prisma');
 const { v4: uuidv4 } = require('uuid');
+const emailService = require('../../services/emailService');
 
 class AuthService {
   /**
@@ -545,6 +547,221 @@ class AuthService {
     } catch (error) {
       console.error('❌ Error revocando todos los tokens:', error.message);
       throw new ValidationError('Error al cerrar todas las sesiones');
+    }
+  }
+
+  /**
+   * Solicitar restablecimiento de contraseña
+   */
+  async forgotPassword(email) {
+    try {
+      // Buscar usuario por email
+      const user = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true, firstName: true, email: true }
+      });
+
+      if (!user) {
+        // Por seguridad, no revelamos si el email existe o no
+        return { message: 'Si el email existe en nuestro sistema, recibirás un enlace para restablecer tu contraseña.' };
+      }
+
+      // Generar token de restablecimiento
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
+
+      // Guardar token en base de datos
+      await prisma.passwordResetToken.create({
+        data: {
+          userId: user.id,
+          token: hashedToken,
+          expiresAt
+        }
+      });
+
+      // Crear enlace de restablecimiento
+      const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
+
+      // Enviar email
+      await emailService.sendPasswordResetEmail({
+        to: user.email,
+        firstName: user.firstName,
+        resetUrl,
+        expiresIn: '15 minutos'
+      });
+
+      return { message: 'Si el email existe en nuestro sistema, recibirás un enlace para restablecer tu contraseña.' };
+    } catch (error) {
+      console.error('❌ Error en forgotPassword:', error.message);
+      throw new ValidationError('Error al procesar solicitud de restablecimiento');
+    }
+  }
+
+  /**
+   * Verificar token de restablecimiento
+   */
+  async verifyResetToken(token) {
+    try {
+      // Hash del token para comparar con la base de datos
+      const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+      // Buscar token válido
+      const resetToken = await prisma.passwordResetToken.findFirst({
+        where: {
+          token: hashedToken,
+          expiresAt: {
+            gt: new Date()
+          },
+          usedAt: null
+        }
+      });
+
+      if (!resetToken) {
+        throw new AuthError('Token de restablecimiento inválido o expirado');
+      }
+
+      return { message: 'Token válido' };
+    } catch (error) {
+      console.error('❌ Error en verifyResetToken:', error.message);
+      if (error instanceof AuthError) {
+        throw error;
+      }
+      throw new ValidationError('Error al verificar token');
+    }
+  }
+
+  /**
+   * Restablecer contraseña
+   */
+  async resetPassword(token, newPassword) {
+    try {
+      // Hash del token para comparar con la base de datos
+      const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+      // Buscar token válido
+      const resetToken = await prisma.passwordResetToken.findFirst({
+        where: {
+          token: hashedToken,
+          expiresAt: {
+            gt: new Date()
+          },
+          usedAt: null
+        },
+        include: {
+          user: true
+        }
+      });
+
+      if (!resetToken) {
+        throw new AuthError('Token de restablecimiento inválido o expirado');
+      }
+
+      // Hashear nueva contraseña
+      const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+      // Actualizar contraseña del usuario y marcar token como usado
+      await prisma.$transaction([
+        prisma.user.update({
+          where: { id: resetToken.userId },
+          data: { password: hashedPassword }
+        }),
+        prisma.passwordResetToken.update({
+          where: { id: resetToken.id },
+          data: { usedAt: new Date() }
+        }),
+        // Revocar todos los refresh tokens existentes por seguridad
+        prisma.refreshToken.updateMany({
+          where: {
+            userId: resetToken.userId,
+            isRevoked: false
+          },
+          data: { isRevoked: true }
+        })
+      ]);
+
+      return { message: 'Contraseña restablecida exitosamente' };
+    } catch (error) {
+      console.error('❌ Error en resetPassword:', error.message);
+      if (error instanceof AuthError) {
+        throw error;
+      }
+      throw new ValidationError('Error al restablecer contraseña');
+    }
+  }
+
+  /**
+   * Habilitar 2FA para un usuario (Admin)
+   */
+  async enable2FAAdmin(userId) {
+    try {
+      // Verificar que el usuario existe
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, firstName: true, lastName: true, email: true, is2FAEnabled: true }
+      });
+
+      if (!user) {
+        throw new NotFoundError('Usuario no encontrado');
+      }
+
+      if (user.is2FAEnabled) {
+        throw new ValidationError('El usuario ya tiene 2FA habilitado');
+      }
+
+      // Habilitar 2FA
+      await prisma.user.update({
+        where: { id: userId },
+        data: { is2FAEnabled: true }
+      });
+
+      return { message: `2FA habilitado para ${user.firstName} ${user.lastName}` };
+    } catch (error) {
+      console.error('❌ Error en enable2FAAdmin:', error.message);
+      if (error instanceof NotFoundError || error instanceof ValidationError) {
+        throw error;
+      }
+      throw new ValidationError('Error al habilitar 2FA');
+    }
+  }
+
+  /**
+   * Deshabilitar 2FA para un usuario (Admin)
+   */
+  async disable2FAAdmin(userId) {
+    try {
+      // Verificar que el usuario existe
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, firstName: true, lastName: true, email: true, is2FAEnabled: true }
+      });
+
+      if (!user) {
+        throw new NotFoundError('Usuario no encontrado');
+      }
+
+      if (!user.is2FAEnabled) {
+        throw new ValidationError('El usuario no tiene 2FA habilitado');
+      }
+
+      // Deshabilitar 2FA y limpiar datos relacionados
+      await prisma.user.update({
+        where: { id: userId },
+        data: { 
+          is2FAEnabled: false,
+          otpSecret: null,
+          otpCode: null,
+          otpExpiry: null
+        }
+      });
+
+      return { message: `2FA deshabilitado para ${user.firstName} ${user.lastName}` };
+    } catch (error) {
+      console.error('❌ Error en disable2FAAdmin:', error.message);
+      if (error instanceof NotFoundError || error instanceof ValidationError) {
+        throw error;
+      }
+      throw new ValidationError('Error al deshabilitar 2FA');
     }
   }
 }

@@ -175,7 +175,7 @@ const paymentCreateSchema = z.object({
   membershipId: z.string().uuid().optional(),
   branchId: z.string().uuid(),
   amount: z.number().positive('Monto debe ser positivo'),
-  method: z.enum(['CASH', 'QR']),
+  method: z.enum(['CASH', 'CARD', 'QR']),
   description: z.string().optional(),
   reference: z.string().optional(),
   dueDate: z.string().datetime().optional(),

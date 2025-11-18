@@ -148,7 +148,7 @@ router.get('/attendance',
  *         name: paymentMethod
  *         schema:
  *           type: string
- *           enum: [CASH, QR]
+ *           enum: [CASH, CARD, QR]
  *         description: Filtrar por método de pago
  *     responses:
  *       200:

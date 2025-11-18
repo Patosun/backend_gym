@@ -1,6 +1,8 @@
 const express = require('express');
 const userController = require('./userController');
 const { authenticateToken, authorize } = require('../../middlewares/auth');
+const { validateSchema } = require('../../middlewares/validation');
+const { idParamSchema } = require('../../utils/zodSchemas');
 
 const router = express.Router();
 
@@ -31,6 +33,13 @@ router.get('/:id', userController.getUserById);
 
 // PUT /api/users/:id - Actualizar usuario
 router.put('/:id', userController.updateUser);
+
+// DELETE /api/users/:id - Eliminar usuario permanentemente (solo ADMIN)
+router.delete('/:id', 
+  authorize(['ADMIN']), 
+  validateSchema(idParamSchema, 'params'), 
+  userController.deleteUser
+);
 
 // PATCH /api/users/:id/deactivate - Desactivar usuario
 router.patch('/:id/deactivate', authorize(['ADMIN']), userController.deactivateUser);

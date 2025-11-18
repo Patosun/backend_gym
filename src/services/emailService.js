@@ -186,6 +186,114 @@ class EmailService {
       throw new Error(`Error enviando email de bienvenida: ${error.message}`);
     }
   }
+
+  /**
+   * Enviar email de restablecimiento de contraseña
+   */
+  async sendPasswordResetEmail({ to, firstName, resetUrl, expiresIn }) {
+    try {
+      const mailOptions = {
+        from: `${process.env.EMAIL_FROM_NAME} <${process.env.EMAIL_FROM_ADDRESS}>`,
+        to: to,
+        subject: 'Restablecimiento de contraseña - SmartGym',
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Restablecimiento de Contraseña</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; }
+              .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+              .header { background-color: #dc2626; color: white; padding: 20px; text-align: center; }
+              .content { padding: 30px; }
+              .reset-button { 
+                display: inline-block;
+                padding: 15px 30px;
+                background-color: #dc2626;
+                color: white !important;
+                text-decoration: none;
+                border-radius: 8px;
+                font-weight: bold;
+                margin: 20px 0;
+                text-align: center;
+              }
+              .footer { background-color: #f8f9fa; padding: 20px; text-align: center; color: #6b7280; }
+              .warning { 
+                background-color: #fef2f2; 
+                border-left: 4px solid #dc2626; 
+                padding: 15px; 
+                margin: 20px 0;
+                border-radius: 4px;
+              }
+              .url-fallback { 
+                background-color: #f8f9fa; 
+                padding: 15px; 
+                border-radius: 8px; 
+                margin: 15px 0;
+                word-break: break-all;
+                font-family: monospace;
+                font-size: 12px;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>🏋️‍♂️ SmartGym</h1>
+                <p>Restablecimiento de Contraseña</p>
+              </div>
+              <div class="content">
+                <h2>¡Hola ${firstName}!</h2>
+                <p>Hemos recibido una solicitud para restablecer la contraseña de tu cuenta en SmartGym.</p>
+                
+                <p>Haz clic en el siguiente botón para crear una nueva contraseña:</p>
+                
+                <div style="text-align: center;">
+                  <a href="${resetUrl}" class="reset-button">
+                    🔐 Restablecer Contraseña
+                  </a>
+                </div>
+                
+                <p>O copia y pega este enlace en tu navegador:</p>
+                <div class="url-fallback">
+                  ${resetUrl}
+                </div>
+                
+                <div class="warning">
+                  <h4>⚠️ Información importante:</h4>
+                  <ul>
+                    <li>Este enlace es válido por <strong>${expiresIn}</strong></li>
+                    <li>Solo puede ser usado una vez</li>
+                    <li>Si no solicitaste este restablecimiento, ignora este email</li>
+                    <li>Tu contraseña actual seguirá siendo válida hasta que la cambies</li>
+                  </ul>
+                </div>
+                
+                <p>Si tienes problemas con el enlace, puedes solicitar uno nuevo desde la página de inicio de sesión.</p>
+                
+                <p>Gracias,<br>El equipo de SmartGym</p>
+              </div>
+              <div class="footer">
+                <p>Este es un mensaje automático, no respondas a este email.</p>
+                <p>Si no solicitaste este restablecimiento, puedes ignorar este mensaje de forma segura.</p>
+                <p>&copy; 2025 SmartGym. Todos los derechos reservados.</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `
+      };
+
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log('✅ Email de restablecimiento de contraseña enviado:', result.messageId);
+      return { success: true, messageId: result.messageId };
+    } catch (error) {
+      console.error('❌ Error enviando email de restablecimiento:', error);
+      throw new Error(`Error enviando email de restablecimiento: ${error.message}`);
+    }
+  }
 }
 
 module.exports = new EmailService();

@@ -259,6 +259,30 @@ const classController = {
   },
 
   /**
+   * Obtener clases disponibles para reservar
+   */
+  async getAvailableClasses(req, res) {
+    try {
+      const { date, limit = 20 } = req.query;
+      let { branchId } = req.query;
+      
+      // Si hay un usuario autenticado con rol MEMBER y no se especificó branchId,
+      // podríamos buscar la última sucursal donde hizo check-in, pero por ahora
+      // mostramos todas las clases para que el miembro pueda elegir cualquier sucursal
+      
+      const filters = {};
+      if (branchId) filters.branchId = branchId;
+      if (date) filters.date = new Date(date);
+
+      const result = await classService.getAvailableClasses(filters, parseInt(limit));
+      res.json(result);
+    } catch (error) {
+      console.error('Error getting available classes:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  },
+
+  /**
    * @swagger
    * /api/classes:
    *   post:
@@ -562,7 +586,16 @@ const classController = {
    */
   async createReservation(req, res) {
     try {
-      const validatedData = createReservationSchema.parse(req.body);
+      const { id: classId } = req.params; // Tomar classId de la URL
+      console.log('Creating reservation - ClassId from URL:', classId);
+      console.log('Creating reservation - Body:', req.body);
+      
+      const validatedData = createReservationSchema.parse({
+        ...req.body,
+        classId // Agregar classId de la URL
+      });
+      
+      console.log('Validated data:', validatedData);
       
       // Verificar permisos - miembros solo pueden hacer sus propias reservas
       if (req.user.role === 'MEMBER') {
@@ -814,14 +847,22 @@ const classController = {
    */
   async getMyReservations(req, res) {
     try {
+      console.log('=== GET MY RESERVATIONS START ===');
+      console.log('User ID:', req.user.id);
+      console.log('Query params:', req.query);
+      
       const { status, upcoming } = req.query;
 
       // Obtener el miembro del usuario autenticado
+      console.log('Looking for member with userId:', req.user.id);
       const member = await classService.getMemberByUserId(req.user.id);
+      console.log('Member found:', member);
+      
       if (!member) {
+        console.log('Member not found for userId:', req.user.id);
         return res.status(404).json({
           success: false,
-          message: 'Miembro no encontrado'
+          message: 'Miembro no encontrado. Contacta al administrador para activar tu perfil de miembro.'
         });
       }
 
@@ -829,7 +870,9 @@ const classController = {
       if (status) filters.status = status;
       if (upcoming === 'true') filters.upcoming = true;
 
+      console.log('Fetching reservations for memberId:', member.id, 'with filters:', filters);
       const reservations = await classService.getMemberReservations(member.id, filters);
+      console.log('Reservations found:', reservations.length);
 
       res.json({
         success: true,
@@ -839,7 +882,8 @@ const classController = {
       console.error('Error getting my reservations:', error);
       res.status(500).json({
         success: false,
-        error: 'Error interno del servidor'
+        error: 'Error interno del servidor',
+        message: error.message
       });
     }
   }

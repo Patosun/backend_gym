@@ -296,9 +296,13 @@ const getMemberStats = async (res, baseStats, userId) => {
         class: {
           include: {
             trainer: {
-              select: {
-                firstName: true,
-                lastName: true
+              include: {
+                user: {
+                  select: {
+                    firstName: true,
+                    lastName: true
+                  }
+                }
               }
             },
             branch: {

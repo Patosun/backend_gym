@@ -91,6 +91,84 @@ const classService = {
   },
 
   /**
+   * Obtener clases disponibles para reservar
+   */
+  async getAvailableClasses(filters = {}, limit = 20) {
+    const now = new Date();
+    let whereClause = {
+      status: 'SCHEDULED', // Solo clases programadas
+      startTime: { 
+        gte: now // Solo clases futuras
+      }
+    };
+    
+    // Filtros opcionales
+    if (filters.branchId) whereClause.branchId = filters.branchId;
+    if (filters.date) {
+      const startOfDay = new Date(filters.date);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(filters.date);
+      endOfDay.setHours(23, 59, 59, 999);
+      
+      whereClause.startTime = {
+        gte: startOfDay,
+        lte: endOfDay
+      };
+    }
+
+    const classes = await prisma.class.findMany({
+      where: whereClause,
+      include: {
+        branch: {
+          select: {
+            id: true,
+            name: true,
+            address: true
+          }
+        },
+        trainer: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true
+              }
+            }
+          }
+        },
+        _count: {
+          select: {
+            reservations: {
+              where: {
+                status: { in: ['CONFIRMED'] } // Solo contar reservas confirmadas
+              }
+            }
+          }
+        }
+      },
+      orderBy: {
+        startTime: 'asc'
+      },
+      take: limit
+    });
+
+    // Calcular spots disponibles y filtrar solo las que tengan cupos
+    const availableClasses = classes
+      .map(classItem => ({
+        ...classItem,
+        availableSpots: classItem.capacity - (classItem._count?.reservations || 0)
+      }))
+      .filter(classItem => classItem.availableSpots > 0); // Solo clases con cupos disponibles
+
+    return {
+      classes: availableClasses,
+      total: availableClasses.length
+    };
+  },
+
+  /**
    * Crear nueva clase
    */
   async createClass(data) {
@@ -117,10 +195,8 @@ const classService = {
       throw new Error('Entrenador no encontrado o inactivo');
     }
 
-    // Verificar que el entrenador pertenece a la sucursal
-    if (trainer.branchId !== data.branchId) {
-      throw new Error('El entrenador no pertenece a esta sucursal');
-    }
+    // Nota: Los entrenadores pueden dar clases en cualquier sucursal
+    // No es necesario que pertenezcan específicamente a la sucursal de la clase
 
     // Verificar conflictos de horario del entrenador
     const conflictingClass = await prisma.class.findFirst({
@@ -654,6 +730,8 @@ const classService = {
    * Obtener reservas de un miembro
    */
   async getMemberReservations(memberId, filters = {}) {
+    console.log('getMemberReservations - memberId:', memberId, 'filters:', filters);
+    
     let whereClause = { memberId };
 
     if (filters.status) {
@@ -667,7 +745,9 @@ const classService = {
       };
     }
 
-    return await prisma.reservation.findMany({
+    console.log('getMemberReservations - whereClause:', whereClause);
+
+    const reservations = await prisma.reservation.findMany({
       where: whereClause,
       include: {
         class: {
@@ -685,6 +765,9 @@ const classService = {
       },
       orderBy: { class: { startTime: 'asc' } }
     });
+
+    console.log('getMemberReservations - Found reservations:', reservations.length);
+    return reservations;
   },
 
   /**
@@ -773,9 +856,12 @@ const classService = {
    * Obtener miembro por userId (para verificación de permisos)
    */
   async getMemberByUserId(userId) {
-    return await prisma.member.findUnique({
+    console.log('getMemberByUserId - Looking for userId:', userId);
+    const member = await prisma.member.findUnique({
       where: { userId }
     });
+    console.log('getMemberByUserId - Found member:', member);
+    return member;
   },
 
   /**

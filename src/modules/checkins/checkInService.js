@@ -1,4 +1,6 @@
 const prisma = require('../../config/prisma');
+const QRCode = require('qrcode');
+const { v4: uuidv4 } = require('uuid');
 
 class CheckInService {
   /**
@@ -516,6 +518,65 @@ class CheckInService {
     });
 
     return updatedCheckIn;
+  }
+
+  /**
+   * Generar QR code visual para check-ins desde el admin
+   */
+  async generateQRForCheckin(branchId, adminUserId) {
+    // Verificar que la sucursal existe
+    const branch = await prisma.branch.findUnique({
+      where: { id: branchId },
+      select: { id: true, name: true }
+    });
+
+    if (!branch) {
+      throw new Error('Sucursal no encontrada');
+    }
+
+    // Generar un ID único para este QR
+    const qrId = uuidv4();
+    const timestamp = Date.now();
+    
+    // Crear la data del QR que incluirá información necesaria para el check-in
+    const qrData = {
+      type: 'checkin',
+      branchId: branchId,
+      qrId: qrId,
+      timestamp: timestamp,
+      generatedBy: adminUserId,
+      expiresAt: timestamp + (24 * 60 * 60 * 1000) // Expira en 24 horas
+    };
+
+    // Convertir a string JSON
+    const qrDataString = JSON.stringify(qrData);
+    
+    // Generar el QR code como imagen base64
+    try {
+      const qrCodeImage = await QRCode.toDataURL(qrDataString, {
+        width: 512,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        },
+        errorCorrectionLevel: 'H'
+      });
+
+      return {
+        qrCodeImage,
+        qrData: qrData,
+        qrDataString,
+        branch: {
+          id: branch.id,
+          name: branch.name
+        },
+        expiresAt: new Date(qrData.expiresAt),
+        instructions: 'Los usuarios pueden usar este QR code con la aplicación móvil para hacer check-in en esta sucursal.'
+      };
+    } catch (error) {
+      throw new Error('Error generando el código QR: ' + error.message);
+    }
   }
 }
 

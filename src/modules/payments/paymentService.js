@@ -83,81 +83,107 @@ const paymentService = {
    * Crear nuevo pago
    */
   async createPayment(data) {
-    // Verificar que el miembro existe
-    const member = await prisma.member.findUnique({
-      where: { id: data.memberId },
-      include: {
-        user: {
-          select: {
-            firstName: true,
-            lastName: true,
-            email: true
-          }
-        }
-      }
-    });
-
-    if (!member) {
-      throw new Error('Miembro no encontrado');
-    }
-
-    // Verificar que la sucursal existe
-    const branch = await prisma.branch.findUnique({
-      where: { id: data.branchId }
-    });
-
-    if (!branch) {
-      throw new Error('Sucursal no encontrada');
-    }
-
-    // Si se especifica membershipId, verificar que existe
-    if (data.membershipId) {
-      const membership = await prisma.membership.findUnique({
-        where: { id: data.membershipId }
-      });
-
-      if (!membership) {
-        throw new Error('Membresía no encontrada');
-      }
-
-      if (membership.memberId !== data.memberId) {
-        throw new Error('La membresía no pertenece al miembro especificado');
-      }
-    }
-
-    const payment = await prisma.payment.create({
-      data: {
-        ...data,
-        paymentDate: data.status === 'COMPLETED' ? (data.paymentDate || new Date()) : null
-      },
-      include: {
-        member: {
-          include: {
-            user: {
-              select: {
-                firstName: true,
-                lastName: true,
-                email: true,
-                phone: true
-              }
+    try {
+      console.log('Creating payment with data:', JSON.stringify(data, null, 2));
+      
+      // Verificar que el miembro existe
+      const member = await prisma.member.findUnique({
+        where: { id: data.memberId },
+        include: {
+          user: {
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true
             }
           }
-        },
-        membership: {
-          include: {
-            membershipType: true
-          }
-        },
-        branch: {
-          select: {
-            name: true,
-            address: true
-          }
+        }
+      });
+
+      if (!member) {
+        throw new Error('Miembro no encontrado');
+      }
+
+      // Verificar que la sucursal existe
+      const branch = await prisma.branch.findUnique({
+        where: { id: data.branchId }
+      });
+
+      if (!branch) {
+        throw new Error('Sucursal no encontrada');
+      }
+
+      // Si se especifica membershipId, verificar que existe
+      if (data.membershipId) {
+        const membership = await prisma.membership.findUnique({
+          where: { id: data.membershipId }
+        });
+
+        if (!membership) {
+          throw new Error('Membresía no encontrada');
+        }
+
+        if (membership.memberId !== data.memberId) {
+          throw new Error('La membresía no pertenece al miembro especificado');
         }
       }
-    });
 
-    return payment;
+      console.log('All validations passed, creating payment...');
+      
+      const payment = await prisma.payment.create({
+        data: {
+          amount: data.amount,
+          method: data.method,
+          status: data.status || 'PENDING',
+          description: data.description,
+          notes: data.notes,
+          paymentDate: data.status === 'COMPLETED' ? (data.paymentDate || new Date()) : new Date(),
+          dueDate: data.dueDate,
+          member: {
+            connect: { id: data.memberId }
+          },
+          branch: {
+            connect: { id: data.branchId }
+          },
+          ...(data.membershipId && {
+            membership: {
+              connect: { id: data.membershipId }
+            }
+          })
+        },
+        include: {
+          member: {
+            include: {
+              user: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                  phone: true
+                }
+              }
+            }
+          },
+          membership: {
+            include: {
+              membershipType: true
+            }
+          },
+          branch: {
+            select: {
+              name: true,
+              address: true
+            }
+          }
+        }
+      });
+
+      console.log('Payment created successfully:', payment.id);
+      return payment;
+    } catch (error) {
+      console.error('Error in createPayment:', error);
+      throw error;
+    }
   },
 
   /**

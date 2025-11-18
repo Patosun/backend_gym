@@ -303,6 +303,121 @@ class AuthController {
       }
     });
   });
+
+  /**
+   * @desc    Solicitar restablecimiento de contraseña
+   * @route   POST /api/auth/forgot-password
+   * @access  Public
+   */
+  forgotPassword = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        error: 'El email es requerido'
+      });
+    }
+
+    const result = await authService.forgotPassword(email);
+    
+    res.json({
+      success: true,
+      message: result.message
+    });
+  });
+
+  /**
+   * @desc    Verificar token de restablecimiento
+   * @route   POST /api/auth/verify-reset-token
+   * @access  Public
+   */
+  verifyResetToken = asyncHandler(async (req, res) => {
+    const { token } = req.body;
+    
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        error: 'Token es requerido'
+      });
+    }
+
+    const result = await authService.verifyResetToken(token);
+    
+    res.json({
+      success: true,
+      message: result.message
+    });
+  });
+
+  /**
+   * @desc    Restablecer contraseña
+   * @route   POST /api/auth/reset-password
+   * @access  Public
+   */
+  resetPassword = asyncHandler(async (req, res) => {
+    const { token, newPassword } = req.body;
+    
+    if (!token || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        error: 'Token y nueva contraseña son requeridos'
+      });
+    }
+
+    const result = await authService.resetPassword(token, newPassword);
+    
+    res.json({
+      success: true,
+      message: result.message
+    });
+  });
+
+  /**
+   * @desc    Habilitar 2FA para un usuario (Admin)
+   * @route   POST /api/auth/enable-2fa-admin
+   * @access  Private (Admin only)
+   */
+  enable2FAAdmin = asyncHandler(async (req, res) => {
+    const { userId } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'ID de usuario es requerido'
+      });
+    }
+
+    const result = await authService.enable2FAAdmin(userId);
+    
+    res.json({
+      success: true,
+      message: result.message
+    });
+  });
+
+  /**
+   * @desc    Deshabilitar 2FA para un usuario (Admin)
+   * @route   POST /api/auth/disable-2fa-admin
+   * @access  Private (Admin only)
+   */
+  disable2FAAdmin = asyncHandler(async (req, res) => {
+    const { userId } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'ID de usuario es requerido'
+      });
+    }
+
+    const result = await authService.disable2FAAdmin(userId);
+    
+    res.json({
+      success: true,
+      message: result.message
+    });
+  });
 }
 
 module.exports = new AuthController();

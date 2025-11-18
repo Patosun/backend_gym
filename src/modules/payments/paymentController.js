@@ -25,7 +25,7 @@ const { z } = require('zod');
  *           minimum: 0
  *         method:
  *           type: string
- *           enum: [CASH, QR]
+ *           enum: [CASH, CARD, QR]
  *         status:
  *           type: string
  *           enum: [PENDING, COMPLETED, CANCELLED]
@@ -69,7 +69,7 @@ const { z } = require('zod');
  *           minimum: 0
  *         method:
  *           type: string
- *           enum: [CASH, QR]
+ *           enum: [CASH, CARD, QR]
  *         description:
  *           type: string
  *         reference:
@@ -87,7 +87,7 @@ const createPaymentSchema = z.object({
   membershipId: z.string().uuid().optional(),
   branchId: z.string().uuid(),
   amount: z.number().min(0),
-  method: z.enum(['CASH', 'QR']),
+  method: z.enum(['CASH', 'CARD', 'QR']),
   description: z.string().optional(),
   reference: z.string().max(100).optional(),
   dueDate: z.string().optional().transform(val => val ? new Date(val) : undefined),
@@ -120,7 +120,7 @@ const paymentController = {
    *         name: method
    *         schema:
    *           type: string
-   *           enum: [CASH, QR]
+   *           enum: [CASH, CARD, QR]
    *       - in: query
    *         name: memberId
    *         schema:
@@ -233,35 +233,49 @@ const paymentController = {
    */
   async createPayment(req, res) {
     try {
+      console.log('=== CREATE PAYMENT START ===');
+      console.log('User role:', req.user.role);
+      console.log('Request body:', JSON.stringify(req.body, null, 2));
+
       if (!['ADMIN', 'EMPLOYEE'].includes(req.user.role)) {
         return res.status(403).json({ error: 'Sin permisos para crear pagos' });
       }
 
+      console.log('Role check passed, validating data...');
       const validatedData = createPaymentSchema.parse(req.body);
+      console.log('Data validation passed:', JSON.stringify(validatedData, null, 2));
       
-      // Para pagos en efectivo, marcar como completado inmediatamente
-      if (validatedData.method === 'CASH') {
+      // Para pagos en efectivo y tarjeta, marcar como completado inmediatamente
+      if (validatedData.method === 'CASH' || validatedData.method === 'CARD') {
         validatedData.status = 'COMPLETED';
         validatedData.paymentDate = new Date();
       } else {
         validatedData.status = 'PENDING';
       }
 
+      console.log('About to call paymentService.createPayment...');
       const payment = await paymentService.createPayment(validatedData);
+      console.log('Payment created successfully:', payment.id);
       
       res.status(201).json(payment);
     } catch (error) {
+      console.error('=== CREATE PAYMENT ERROR ===');
+      console.error('Error details:', error);
+      console.error('Error stack:', error.stack);
+      
       if (error.name === 'ZodError') {
+        console.error('Zod validation errors:', error.errors);
         return res.status(400).json({ 
           error: 'Datos inválidos', 
           details: error.errors 
         });
       }
       if (error.message.includes('no encontrado')) {
+        console.error('Not found error:', error.message);
         return res.status(400).json({ error: error.message });
       }
-      console.error('Error creating payment:', error);
-      res.status(500).json({ error: 'Error interno del servidor' });
+      console.error('=== RETURNING 500 ERROR ===');
+      res.status(500).json({ error: 'Error interno del servidor', details: error.message });
     }
   },
 

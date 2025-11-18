@@ -745,6 +745,84 @@ const userController = {
       console.error('Error getting user stats:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
     }
+  },
+
+  /**
+   * @swagger
+   * /api/users/{id}:
+   *   delete:
+   *     summary: Eliminar usuario permanentemente
+   *     description: Elimina un usuario del sistema de forma permanente. Solo disponible para ADMIN.
+   *     tags: [Users]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         description: ID del usuario a eliminar
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *     responses:
+   *       200:
+   *         description: Usuario eliminado exitosamente
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 message:
+   *                   type: string
+   *       404:
+   *         description: Usuario no encontrado
+   *       401:
+   *         description: No autorizado
+   *       403:
+   *         description: Sin permisos (solo ADMIN)
+   */
+  async deleteUser(req, res) {
+    try {
+      const { id } = req.params;
+
+      // Verificar que el usuario a eliminar no sea el mismo que hace la request
+      if (id === req.user.id) {
+        return res.status(400).json({
+          success: false,
+          message: 'No puedes eliminar tu propia cuenta'
+        });
+      }
+
+      console.log(`🗑️ Attempting to delete user: ${id}`);
+      const result = await userService.deleteUser(id);
+      console.log(`✅ User deleted successfully: ${id}`);
+      
+      res.json(result);
+    } catch (error) {
+      console.error('❌ Error deleting user:', error);
+      console.error('Error stack:', error.stack);
+      
+      if (error.message === 'Usuario no encontrado') {
+        return res.status(404).json({
+          success: false,
+          message: 'Usuario no encontrado'
+        });
+      }
+      
+      // Log more detailed error for debugging
+      if (error.code) {
+        console.error('Prisma error code:', error.code);
+        console.error('Prisma error meta:', error.meta);
+      }
+      
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor',
+        ...(process.env.NODE_ENV === 'development' && { error: error.message })
+      });
+    }
   }
 };
 

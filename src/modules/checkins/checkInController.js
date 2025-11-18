@@ -176,6 +176,22 @@ class CheckInController {
       data: checkIn
     });
   });
+
+  /**
+   * @desc    Generar QR code visual para check-ins
+   * @route   POST /api/checkins/admin/generate-qr
+   * @access  Private (Admin/Employee)
+   */
+  generateQRForCheckin = asyncHandler(async (req, res) => {
+    const { branchId } = req.body;
+    const qrData = await checkInService.generateQRForCheckin(branchId, req.user.id);
+    
+    res.json({
+      success: true,
+      message: 'QR generado exitosamente',
+      data: qrData
+    });
+  });
 }
 
 module.exports = new CheckInController();

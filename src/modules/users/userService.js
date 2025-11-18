@@ -24,6 +24,7 @@ const userService = {
           photo: true,
           role: true,
           isActive: true,
+          is2FAEnabled: true,
           emailVerified: true,
           lastLogin: true,
           createdAt: true,
@@ -62,6 +63,7 @@ const userService = {
         photo: true,
         role: true,
         isActive: true,
+        is2FAEnabled: true,
         emailVerified: true,
         lastLogin: true,
         createdAt: true,
@@ -392,6 +394,63 @@ const userService = {
         }
       }
     });
+  },
+
+  /**
+   * Eliminar un usuario permanentemente
+   */
+  async deleteUser(userId) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        member: {
+          include: {
+            memberships: true,
+            payments: true,
+            reservations: true,
+            checkIns: true
+          }
+        },
+        employee: true,
+        trainer: {
+          include: {
+            classes: true
+          }
+        }
+      }
+    });
+
+    if (!user) {
+      throw new Error('Usuario no encontrado');
+    }
+
+    // Usar transacción para eliminar en el orden correcto
+    await prisma.$transaction(async (tx) => {
+      // 1. Si es entrenador, actualizar clases asignadas (no eliminarlas)
+      if (user.trainer) {
+        await tx.class.updateMany({
+          where: { trainerId: user.trainer.id },
+          data: { trainerId: null }
+        });
+      }
+
+      // 2. Eliminar refresh tokens
+      await tx.refreshToken.deleteMany({
+        where: { userId: userId }
+      });
+
+      // 3. Eliminar el usuario (las cascadas se encargarán del resto)
+      // Member tiene onDelete: Cascade, así que se eliminará automáticamente
+      // junto con sus memberships, payments, reservations, checkIns
+      await tx.user.delete({
+        where: { id: userId }
+      });
+    });
+
+    return {
+      success: true,
+      message: 'Usuario eliminado exitosamente'
+    };
   }
 };
 

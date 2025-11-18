@@ -97,6 +97,69 @@ router.get('/',
 
 /**
  * @swagger
+ * /api/classes/available:
+ *   get:
+ *     tags: [Classes]
+ *     summary: Obtener clases disponibles para reservar
+ *     description: Obtiene todas las clases futuras disponibles para reservar (con cupos libres)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: branchId
+ *         schema:
+ *           type: string
+ *         description: ID de la sucursal (opcional)
+ *       - in: query
+ *         name: date
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filtrar por fecha específica
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 20
+ *         description: Número de elementos por página
+ *     responses:
+ *       200:
+ *         description: Clases disponibles obtenidas exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 classes:
+ *                   type: array
+ *                   items:
+ *                     allOf:
+ *                       - $ref: '#/components/schemas/Class'
+ *                       - type: object
+ *                         properties:
+ *                           availableSpots:
+ *                             type: integer
+ *                             description: Cupos disponibles
+ *                           _count:
+ *                             type: object
+ *                             properties:
+ *                               reservations:
+ *                                 type: integer
+ *                 total:
+ *                   type: integer
+ *                   description: Total de clases disponibles
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
+router.get('/available', 
+  authenticateToken,
+  classController.getAvailableClasses
+);
+
+/**
+ * @swagger
  * /api/classes:
  *   post:
  *     tags: [Classes]
@@ -212,6 +275,48 @@ router.get('/stats',
   authenticateToken,
   authorize(['ADMIN', 'EMPLOYEE']),
   classController.getClassStats
+);
+
+/**
+ * @swagger
+ * /api/classes/my-reservations:
+ *   get:
+ *     tags: [Reservations]
+ *     summary: Obtener mis reservas
+ *     description: Obtiene todas las reservas del miembro autenticado
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [CONFIRMED, COMPLETED, CANCELLED, NO_SHOW]
+ *         description: Estado de la reserva
+ *       - in: query
+ *         name: upcoming
+ *         schema:
+ *           type: boolean
+ *         description: Filtrar solo reservas futuras
+ *     responses:
+ *       200:
+ *         description: Reservas obtenidas exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Reservation'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ */
+router.get('/my-reservations', 
+  authenticateToken,
+  authorize(['MEMBER']),
+  validateSchema(memberReservationFiltersSchema, 'query'),
+  classController.getMyReservations
 );
 
 /**
@@ -529,48 +634,6 @@ router.put('/reservations/:id',
   authenticateToken,
   validateSchema(updateReservationSchema),
   classController.updateReservation
-);
-
-/**
- * @swagger
- * /api/my-reservations:
- *   get:
- *     tags: [Reservations]
- *     summary: Obtener mis reservas
- *     description: Obtiene todas las reservas del miembro autenticado
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: status
- *         schema:
- *           type: string
- *           enum: [CONFIRMED, COMPLETED, CANCELLED, NO_SHOW]
- *         description: Estado de la reserva
- *       - in: query
- *         name: upcoming
- *         schema:
- *           type: boolean
- *         description: Filtrar solo reservas futuras
- *     responses:
- *       200:
- *         description: Reservas obtenidas exitosamente
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Reservation'
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
- *       403:
- *         $ref: '#/components/responses/Forbidden'
- */
-router.get('/my-reservations', 
-  authenticateToken,
-  authorize(['MEMBER']),
-  validateSchema(memberReservationFiltersSchema, 'query'),
-  classController.getMyReservations
 );
 
 module.exports = router;

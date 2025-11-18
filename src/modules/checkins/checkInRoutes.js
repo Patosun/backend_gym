@@ -356,4 +356,64 @@ router.post('/admin/checkout',
   checkInController.adminCheckOut
 );
 
+/**
+ * @swagger
+ * /api/checkins/admin/generate-qr:
+ *   post:
+ *     summary: Generar QR code visual para check-ins
+ *     tags: [Check-ins]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - branchId
+ *             properties:
+ *               branchId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: ID de la sucursal para el check-in
+ *     responses:
+ *       200:
+ *         description: QR code generado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     qrCodeImage:
+ *                       type: string
+ *                       description: Imagen QR en formato base64
+ *                     qrData:
+ *                       type: object
+ *                       description: Datos contenidos en el QR
+ *                     branch:
+ *                       type: object
+ *                       description: Información de la sucursal
+ *                     expiresAt:
+ *                       type: string
+ *                       format: date-time
+ *                       description: Fecha de expiración del QR
+ *       400:
+ *         description: Error en la validación
+ *       404:
+ *         description: Sucursal no encontrada
+ */
+router.post('/admin/generate-qr', 
+  authenticateToken, 
+  authorize(['ADMIN', 'EMPLOYEE']),
+  checkInController.generateQRForCheckin
+);
+
 module.exports = router;

@@ -357,4 +357,147 @@ router.post('/enable-2fa', authenticateToken, authController.enable2FA);
  */
 router.post('/disable-2fa', authenticateToken, authController.disable2FA);
 
+/**
+ * @swagger
+ * /api/auth/forgot-password:
+ *   post:
+ *     summary: Solicitar restablecimiento de contraseña
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Email del usuario
+ *     responses:
+ *       200:
+ *         description: Email enviado exitosamente
+ *       400:
+ *         description: Email requerido
+ */
+router.post('/forgot-password', authController.forgotPassword);
+
+/**
+ * @swagger
+ * /api/auth/verify-reset-token:
+ *   post:
+ *     summary: Verificar token de restablecimiento
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: Token de restablecimiento
+ *     responses:
+ *       200:
+ *         description: Token válido
+ *       400:
+ *         description: Token inválido o expirado
+ */
+router.post('/verify-reset-token', authController.verifyResetToken);
+
+/**
+ * @swagger
+ * /api/auth/reset-password:
+ *   post:
+ *     summary: Restablecer contraseña
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - newPassword
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: Token de restablecimiento
+ *               newPassword:
+ *                 type: string
+ *                 description: Nueva contraseña
+ *     responses:
+ *       200:
+ *         description: Contraseña restablecida exitosamente
+ *       400:
+ *         description: Token o contraseña inválidos
+ */
+router.post('/reset-password', authController.resetPassword);
+
+/**
+ * @swagger
+ * /api/auth/enable-2fa-admin:
+ *   post:
+ *     summary: Habilitar 2FA para un usuario (Admin)
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 description: ID del usuario
+ *     responses:
+ *       200:
+ *         description: 2FA habilitado exitosamente
+ *       400:
+ *         description: Datos inválidos
+ *       401:
+ *         description: No autorizado
+ */
+router.post('/enable-2fa-admin', authenticateToken, authController.enable2FAAdmin);
+
+/**
+ * @swagger
+ * /api/auth/disable-2fa-admin:
+ *   post:
+ *     summary: Deshabilitar 2FA para un usuario (Admin)
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 description: ID del usuario
+ *     responses:
+ *       200:
+ *         description: 2FA deshabilitado exitosamente
+ *       400:
+ *         description: Datos inválidos
+ *       401:
+ *         description: No autorizado
+ */
+router.post('/disable-2fa-admin', authenticateToken, authController.disable2FAAdmin);
+
 module.exports = router;
