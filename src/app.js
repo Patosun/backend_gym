@@ -5,10 +5,6 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
-const swaggerUi = require('swagger-ui-express');
-
-// Swagger configuration - usando la nueva estructura modular
-// const { swaggerSpec } = require('./docs/swagger/config');
 
 // Middlewares
 const { errorHandler, notFound, sanitizeInput, requestLogger } = require('./middlewares/validation');
@@ -126,26 +122,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API Documentation
-// app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-//   explorer: true,
-//   customCss: '.swagger-ui .topbar { display: none }',
-//   customSiteTitle: 'GymMaster API Documentation',
-//   swaggerOptions: {
-//     persistAuthorization: true,
-//     displayRequestDuration: true,
-//     docExpansion: 'none',
-//     filter: true,
-//     showRequestHeaders: true,
-//     tryItOutEnabled: true
-//   }
-// }));
-
-// Serve swagger spec as JSON
-// app.get('/api-docs.json', (req, res) => {
-//   res.setHeader('Content-Type', 'application/json');
-//   res.send(swaggerSpec);
-// });
+// API Documentation disabled for production
 
 // API Routes
 const API_PREFIX = process.env.API_PREFIX || '/api';
@@ -167,7 +144,6 @@ app.get('/', (req, res) => {
     success: true,
     message: '🏋️‍♂️ Bienvenido a GymMaster API',
     version: '1.0.0',
-    documentation: '/api-docs',
     health: '/health',
     environment: process.env.NODE_ENV
   });
