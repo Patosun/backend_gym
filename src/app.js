@@ -8,7 +8,7 @@ const cookieParser = require('cookie-parser');
 const swaggerUi = require('swagger-ui-express');
 
 // Swagger configuration - usando la nueva estructura modular
-const { swaggerSpec } = require('./docs/swagger/config');
+// const { swaggerSpec } = require('./docs/swagger/config');
 
 // Middlewares
 const { errorHandler, notFound, sanitizeInput, requestLogger } = require('./middlewares/validation');
@@ -127,25 +127,25 @@ app.get('/health', (req, res) => {
 });
 
 // API Documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  explorer: true,
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'GymMaster API Documentation',
-  swaggerOptions: {
-    persistAuthorization: true,
-    displayRequestDuration: true,
-    docExpansion: 'none',
-    filter: true,
-    showRequestHeaders: true,
-    tryItOutEnabled: true
-  }
-}));
+// app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+//   explorer: true,
+//   customCss: '.swagger-ui .topbar { display: none }',
+//   customSiteTitle: 'GymMaster API Documentation',
+//   swaggerOptions: {
+//     persistAuthorization: true,
+//     displayRequestDuration: true,
+//     docExpansion: 'none',
+//     filter: true,
+//     showRequestHeaders: true,
+//     tryItOutEnabled: true
+//   }
+// }));
 
 // Serve swagger spec as JSON
-app.get('/api-docs.json', (req, res) => {
-  res.setHeader('Content-Type', 'application/json');
-  res.send(swaggerSpec);
-});
+// app.get('/api-docs.json', (req, res) => {
+//   res.setHeader('Content-Type', 'application/json');
+//   res.send(swaggerSpec);
+// });
 
 // API Routes
 const API_PREFIX = process.env.API_PREFIX || '/api';
