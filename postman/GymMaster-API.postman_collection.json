@@ -1,0 +1,878 @@
+{
+	"info": {
+		"_postman_id": "gymmaster-api-collection",
+		"name": "GymMaster API",
+		"description": "Colección completa de APIs para el sistema de administración de gimnasio GymMaster",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "gymmaster"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@gymmaster.com\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/login",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"nuevo@usuario.com\",\n  \"password\": \"password123\",\n  \"firstName\": \"Nombre\",\n  \"lastName\": \"Apellido\",\n  \"role\": \"MEMBER\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/register",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "auth", "register"]
+						}
+					}
+				},
+				{
+					"name": "Forgot Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"usuario@gymmaster.com\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/forgot-password",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "auth", "forgot-password"]
+						}
+					}
+				},
+				{
+					"name": "Reset Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"reset_token_here\",\n  \"newPassword\": \"newpassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/reset-password",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "auth", "reset-password"]
+						}
+					}
+				},
+				{
+					"name": "Change Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"currentPassword\": \"password123\",\n  \"newPassword\": \"newpassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/change-password",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "auth", "change-password"]
+						}
+					}
+				},
+				{
+					"name": "Enable 2FA Admin",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"user_id_here\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/enable-2fa-admin",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "auth", "enable-2fa-admin"]
+						}
+					}
+				},
+				{
+					"name": "Disable 2FA Admin",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"user_id_here\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/disable-2fa-admin",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "auth", "disable-2fa-admin"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/users",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "users"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"disabled": true
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/users/:id",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "users", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "user_id_here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"Nombre Actualizado\",\n  \"lastName\": \"Apellido Actualizado\",\n  \"phone\": \"+591 12345678\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/users/:id",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "users", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "user_id_here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/users/:id",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "users", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "user_id_here"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Branches",
+			"item": [
+				{
+					"name": "Get All Branches",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/branches",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "branches"]
+						}
+					}
+				},
+				{
+					"name": "Create Branch",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Sucursal Norte\",\n  \"address\": \"Av. Principal 123\",\n  \"phone\": \"+591 12345678\",\n  \"email\": \"norte@gymmaster.com\",\n  \"city\": \"Santa Cruz\",\n  \"state\": \"Santa Cruz\",\n  \"zipCode\": \"00000\",\n  \"openingTime\": \"06:00\",\n  \"closingTime\": \"23:00\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/branches",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "branches"]
+						}
+					}
+				},
+				{
+					"name": "Update Branch",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Sucursal Norte Actualizada\",\n  \"phone\": \"+591 87654321\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/branches/:id",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "branches", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "branch_id_here"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Members",
+			"item": [
+				{
+					"name": "Get All Members",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/members",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "members"]
+						}
+					}
+				},
+				{
+					"name": "Create Member",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"Juan\",\n  \"lastName\": \"Pérez\",\n  \"email\": \"juan@email.com\",\n  \"password\": \"password123\",\n  \"phone\": \"+591 12345678\",\n  \"dateOfBirth\": \"1990-01-15\",\n  \"emergencyContact\": \"María Pérez\",\n  \"emergencyPhone\": \"+591 87654321\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/members",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "members"]
+						}
+					}
+				},
+				{
+					"name": "Get Member Dashboard Stats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/members/dashboard-stats",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "members", "dashboard-stats"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Memberships",
+			"item": [
+				{
+					"name": "Get Membership Types",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/memberships/types",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "memberships", "types"]
+						}
+					}
+				},
+				{
+					"name": "Create Membership Type",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Premium\",\n  \"description\": \"Membresía premium con acceso completo\",\n  \"durationDays\": 30,\n  \"price\": 500,\n  \"features\": [\"Acceso ilimitado\", \"Clases grupales\", \"Entrenador personal\"],\n  \"maxClasses\": null\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/memberships/types",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "memberships", "types"]
+						}
+					}
+				},
+				{
+					"name": "Get Member Memberships",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/memberships",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "memberships"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Classes",
+			"item": [
+				{
+					"name": "Get All Classes",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/classes",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "classes"]
+						}
+					}
+				},
+				{
+					"name": "Get Available Classes",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/classes/available",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "classes", "available"],
+							"query": [
+								{
+									"key": "date",
+									"value": "2024-01-15",
+									"disabled": true
+								},
+								{
+									"key": "branchId",
+									"value": "branch_id_here",
+									"disabled": true
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Class",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Yoga Matutino\",\n  \"description\": \"Clase de yoga para comenzar el día\",\n  \"branchId\": \"branch_id_here\",\n  \"trainerId\": \"trainer_id_here\",\n  \"capacity\": 20,\n  \"duration\": 60,\n  \"startTime\": \"2024-01-15T07:00:00.000Z\",\n  \"endTime\": \"2024-01-15T08:00:00.000Z\",\n  \"price\": 50\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/classes",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "classes"]
+						}
+					}
+				},
+				{
+					"name": "Get My Reservations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/classes/my-reservations",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "classes", "my-reservations"]
+						}
+					}
+				},
+				{
+					"name": "Enroll in Class",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"classId\": \"class_id_here\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/classes/enroll",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "classes", "enroll"]
+						}
+					}
+				},
+				{
+					"name": "Cancel Enrollment",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/classes/reservations/:reservationId",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "classes", "reservations", ":reservationId"],
+							"variable": [
+								{
+									"key": "reservationId",
+									"value": "reservation_id_here"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Payments",
+			"item": [
+				{
+					"name": "Get All Payments",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/payments",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "payments"]
+						}
+					}
+				},
+				{
+					"name": "Create Payment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"memberId\": \"member_id_here\",\n  \"membershipId\": \"membership_id_here\",\n  \"branchId\": \"branch_id_here\",\n  \"amount\": 500,\n  \"method\": \"CARD\",\n  \"description\": \"Pago mensualidad\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/payments",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "payments"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Check-ins",
+			"item": [
+				{
+					"name": "Get All Check-ins",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/checkins",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "checkins"]
+						}
+					}
+				},
+				{
+					"name": "Create Check-in",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"memberId\": \"member_id_here\",\n  \"branchId\": \"branch_id_here\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/checkins",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "checkins"]
+						}
+					}
+				},
+				{
+					"name": "Generate QR Code for Check-in",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"branchId\": \"branch_id_here\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/checkins/admin/generate-qr",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "checkins", "admin", "generate-qr"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Reports",
+			"item": [
+				{
+					"name": "Dashboard Stats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/reports/dashboard",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "reports", "dashboard"]
+						}
+					}
+				},
+				{
+					"name": "Revenue Report",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/reports/revenue",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "reports", "revenue"],
+							"query": [
+								{
+									"key": "startDate",
+									"value": "2024-01-01",
+									"disabled": true
+								},
+								{
+									"key": "endDate",
+									"value": "2024-01-31",
+									"disabled": true
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Membership Report",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/reports/memberships",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "reports", "memberships"]
+						}
+					}
+				},
+				{
+					"name": "Attendance Report",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/reports/attendance",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "reports", "attendance"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Health Check",
+			"item": [
+				{
+					"name": "API Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/health",
+							"host": ["{{BASE_URL}}"],
+							"path": ["health"]
+						}
+					}
+				},
+				{
+					"name": "API Root",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/",
+							"host": ["{{BASE_URL}}"],
+							"path": [""]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "BASE_URL",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "TOKEN",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

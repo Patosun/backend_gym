@@ -23,6 +23,9 @@ const dashboardRoutes = require('./modules/dashboard/dashboardRoutes');
 
 const app = express();
 
+// Trust proxy for Vercel and other proxy environments
+app.set('trust proxy', true);
+
 // Security middlewares
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
