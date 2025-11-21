@@ -314,17 +314,6 @@ class AuthService {
   async getUserById(userId) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        is2FAEnabled: true
-      },
       include: {
         member: true,
         employee: {
@@ -359,8 +348,11 @@ class AuthService {
       }
     });
 
+    // Remover password de la respuesta
+    const { password: _, ...userWithoutPassword } = user;
+
     return {
-      user,
+      user: userWithoutPassword,
       accessToken,
       refreshToken
     };
