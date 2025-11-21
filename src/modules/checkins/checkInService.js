@@ -7,48 +7,69 @@ class CheckInService {
    * Realizar check-in mediante QR
    */
   async checkIn(qrCode, branchId) {
-    // Buscar miembro por QR code
-    const member = await prisma.member.findUnique({
-      where: { qrCode },
-      include: {
-        user: {
-          select: {
-            firstName: true,
-            lastName: true,
-            email: true,
-            isActive: true
+    try {
+      console.log('🔍 CheckIn: Iniciando check-in con:', { qrCode, branchId });
+      
+      // Buscar miembro por QR code
+      const member = await prisma.member.findUnique({
+        where: { qrCode },
+        include: {
+          user: {
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true,
+              isActive: true
+            }
+          },
+          memberships: {
+            where: {
+              status: 'ACTIVE',
+              startDate: { lte: new Date() },
+              endDate: { gte: new Date() }
+            },
+            include: {
+              membershipType: true
+            },
+            orderBy: { endDate: 'desc' },
+            take: 1
           }
-        },
-        memberships: {
-          where: {
-            status: 'ACTIVE',
-            startDate: { lte: new Date() },
-            endDate: { gte: new Date() }
-          },
-          include: {
-            membershipType: true
-          },
-          orderBy: { endDate: 'desc' },
-          take: 1
         }
+      });
+
+      console.log('🔍 CheckIn: Miembro encontrado:', !!member);
+      if (member) {
+        console.log('🔍 CheckIn: Datos del miembro:', {
+          id: member.id,
+          firstName: member.user.firstName,
+          isActive: member.user.isActive,
+          qrCodeExpiry: member.qrCodeExpiry,
+          membershipsCount: member.memberships.length
+        });
       }
-    });
 
     if (!member) {
+      console.log('❌ CheckIn: Código QR inválido:', qrCode);
       throw new Error('Código QR inválido');
     }
 
     if (!member.user.isActive) {
+      console.log('❌ CheckIn: Usuario inactivo:', member.user.email);
       throw new Error('Usuario inactivo');
     }
 
     // Verificar si el QR ha expirado
     if (new Date() > member.qrCodeExpiry) {
+      console.log('❌ CheckIn: QR expirado:', { 
+        now: new Date(), 
+        expiry: member.qrCodeExpiry 
+      });
       throw new Error('Código QR expirado');
     }
 
     // Verificar membresía activa
     if (!member.memberships || member.memberships.length === 0) {
+      console.log('❌ CheckIn: Sin membresía activa');
       throw new Error('No tienes una membresía activa');
     }
 
@@ -62,17 +83,31 @@ class CheckInService {
     });
 
     if (activeCheckIn) {
+      console.log('❌ CheckIn: Check-in ya activo:', activeCheckIn.id);
       throw new Error('Ya tienes un check-in activo. Debes hacer check-out primero.');
     }
 
     // Verificar que la sucursal existe y está activa
+    console.log('🔍 CheckIn: Verificando sucursal:', branchId);
     const branch = await prisma.branch.findUnique({
       where: { id: branchId }
     });
 
+    console.log('🔍 CheckIn: Sucursal encontrada:', !!branch);
+    if (branch) {
+      console.log('🔍 CheckIn: Datos de la sucursal:', {
+        id: branch.id,
+        name: branch.name,
+        isActive: branch.isActive
+      });
+    }
+
     if (!branch || !branch.isActive) {
+      console.log('❌ CheckIn: Sucursal no encontrada o inactiva');
       throw new Error('Sucursal no encontrada o inactiva');
     }
+
+    console.log('✅ CheckIn: Todas las validaciones pasaron, creando check-in...');
 
     // Crear check-in
     const checkIn = await prisma.checkIn.create({
@@ -101,7 +136,14 @@ class CheckInService {
       }
     });
 
+    console.log('✅ CheckIn: Check-in creado exitosamente:', checkIn.id);
     return checkIn;
+    
+    } catch (error) {
+      console.error('❌ CheckIn: Error en checkIn:', error.message);
+      console.error('❌ CheckIn: Stack trace:', error.stack);
+      throw error;
+    }
   }
 
   /**
