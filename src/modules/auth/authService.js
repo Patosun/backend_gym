@@ -324,6 +324,15 @@ class AuthService {
         isActive: true,
         createdAt: true,
         is2FAEnabled: true
+      },
+      include: {
+        member: true,
+        employee: {
+          include: { branch: true }
+        },
+        trainer: {
+          include: { branch: true }
+        }
       }
     });
 
