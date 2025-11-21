@@ -526,6 +526,115 @@ const memberService = {
       take: limit,
       orderBy: { user: { firstName: 'asc' } }
     });
+  },
+
+  /**
+   * Obtener estadísticas del miembro autenticado
+   */
+  async getMyStats(userId) {
+    try {
+      // Buscar el miembro por userId
+      const member = await prisma.member.findFirst({
+        where: { 
+          userId: userId,
+          isActive: true 
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true
+            }
+          },
+          memberships: {
+            where: { 
+              isActive: true,
+              startDate: { lte: new Date() },
+              endDate: { gte: new Date() }
+            },
+            include: {
+              membershipType: {
+                select: {
+                  name: true,
+                  description: true
+                }
+              }
+            },
+            orderBy: { startDate: 'desc' },
+            take: 1
+          }
+        }
+      });
+
+      if (!member) {
+        throw new Error('Miembro no encontrado');
+      }
+
+      // Obtener fecha de inicio del mes actual
+      const currentMonthStart = new Date();
+      currentMonthStart.setDate(1);
+      currentMonthStart.setHours(0, 0, 0, 0);
+
+      // Contar check-ins del mes actual
+      const checkinsThisMonth = await prisma.checkIn.count({
+        where: {
+          member: {
+            userId: userId
+          },
+          checkInTime: {
+            gte: currentMonthStart
+          }
+        }
+      });
+
+      // Contar reservas de clases del mes actual
+      const classReservationsThisMonth = await prisma.classReservation.count({
+        where: {
+          member: {
+            userId: userId
+          },
+          createdAt: {
+            gte: currentMonthStart
+          }
+        }
+      });
+
+      // Contar total de clases inscritas (reservas activas)
+      const totalEnrolledClasses = await prisma.classReservation.count({
+        where: {
+          member: {
+            userId: userId
+          },
+          status: 'CONFIRMED'
+        }
+      });
+
+      // Obtener membresía activa
+      const activeMembership = member.memberships[0] || null;
+
+      return {
+        success: true,
+        data: {
+          member: {
+            id: member.id,
+            membershipNumber: member.membershipNumber,
+            user: member.user
+          },
+          totalCheckinsThisMonth: checkinsThisMonth,
+          totalEnrolledClasses: totalEnrolledClasses,
+          classReservationsThisMonth: classReservationsThisMonth,
+          activeMembership: activeMembership,
+          qrCode: member.qrCode,
+          qrCodeExpiry: member.qrCodeExpiry
+        }
+      };
+
+    } catch (error) {
+      console.error('Error getting my stats:', error);
+      throw error;
+    }
   }
 };
 

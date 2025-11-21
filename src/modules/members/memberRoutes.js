@@ -20,8 +20,11 @@ router.get('/', authorize(['ADMIN', 'EMPLOYEE']), memberController.getAllMembers
 // POST /api/members - Crear nuevo miembro
 router.post('/', authorize(['ADMIN', 'EMPLOYEE']), memberController.createMember);
 
-// GET /api/members/stats - Estadísticas de miembros
+// GET /api/members/stats - Estadísticas de miembros (Solo Admin/Employee)
 router.get('/stats', authorize(['ADMIN', 'EMPLOYEE']), memberController.getMemberStats);
+
+// GET /api/members/my-stats - Mis estadísticas como miembro
+router.get('/my-stats', memberController.getMyStats);
 
 // GET /api/members/qr/:qrCode - Obtener miembro por QR
 router.get('/qr/:qrCode', memberController.getMemberByQR);

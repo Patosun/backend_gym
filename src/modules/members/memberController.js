@@ -658,6 +658,20 @@ const memberController = {
       console.error('Error getting member stats:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
     }
+  },
+
+  /**
+   * Obtener mis estadísticas como miembro autenticado
+   */
+  async getMyStats(req, res) {
+    try {
+      const userId = req.user.id;
+      const stats = await memberService.getMyStats(userId);
+      res.json(stats);
+    } catch (error) {
+      console.error('Error getting my stats:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
   }
 };
 
