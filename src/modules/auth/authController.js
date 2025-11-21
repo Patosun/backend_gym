@@ -231,6 +231,126 @@ class AuthController {
   });
 
   /**
+   * @desc    Autenticación móvil completa (maneja login + 2FA)
+   * @route   POST /api/auth/mobile-auth
+   * @access  Public
+   */
+  mobileAuth = asyncHandler(async (req, res) => {
+    const { email, password, otpCode, userId } = req.body;
+    
+    try {
+      // Caso 1: Login inicial (email + password)
+      if (email && password && !otpCode && !userId) {
+        console.log('🔐 [MOBILE-AUTH] Login inicial:', { email });
+        
+        const result = await authService.login(email, password);
+        const is2FAEnabled = await twoFactorService.is2FAEnabled(result.user.id);
+        
+        if (is2FAEnabled) {
+          // Generar y enviar OTP
+          console.log('🔐 [MOBILE-AUTH] Generando OTP para user:', result.user.id);
+          await twoFactorService.generateAndSendOTP(result.user.id);
+          
+          return res.json({
+            success: true,
+            requires2FA: true,
+            message: 'Código de verificación enviado por email',
+            data: {
+              userId: result.user.id,
+              email: result.user.email,
+              step: 'otp_required'
+            }
+          });
+        } else {
+          // Login completo sin 2FA
+          console.log('🔐 [MOBILE-AUTH] Login completo sin 2FA');
+          return res.json({
+            success: true,
+            requires2FA: false,
+            message: 'Login exitoso',
+            data: {
+              user: result.user,
+              accessToken: result.accessToken,
+              refreshToken: result.refreshToken,
+              step: 'completed'
+            }
+          });
+        }
+      }
+      
+      // Caso 2: Verificación OTP (userId + otpCode)
+      else if (userId && otpCode && !email && !password) {
+        console.log('🔐 [MOBILE-AUTH] Verificando OTP:', { userId, otpCode });
+        
+        // Verificar OTP
+        await twoFactorService.verifyOTP(userId, otpCode);
+        
+        // Obtener usuario completo con tokens
+        const result = await authService.getUserById(userId);
+        
+        console.log('🔐 [MOBILE-AUTH] OTP verificado correctamente');
+        return res.json({
+          success: true,
+          requires2FA: false,
+          message: 'Verificación 2FA exitosa',
+          data: {
+            user: result.user,
+            accessToken: result.accessToken,
+            refreshToken: result.refreshToken,
+            step: 'completed'
+          }
+        });
+      }
+      
+      // Caso inválido
+      else {
+        return res.status(400).json({
+          success: false,
+          message: 'Parámetros inválidos',
+          error: 'Debe proporcionar (email + password) para login o (userId + otpCode) para verificación 2FA'
+        });
+      }
+      
+    } catch (error) {
+      console.error('🔐 [MOBILE-AUTH] Error:', error.message);
+      
+      // Manejar errores específicos
+      if (error.message?.includes('Credenciales inválidas') || 
+          error.message?.includes('incorrectas')) {
+        return res.status(401).json({
+          success: false,
+          message: 'Email o contraseña incorrectos',
+          error: 'INVALID_CREDENTIALS'
+        });
+      }
+      
+      if (error.message?.includes('OTP') || 
+          error.message?.includes('código')) {
+        return res.status(401).json({
+          success: false,
+          message: 'Código de verificación incorrecto o expirado',
+          error: 'INVALID_OTP'
+        });
+      }
+      
+      if (error.message?.includes('no encontrado')) {
+        return res.status(404).json({
+          success: false,
+          message: 'Usuario no encontrado',
+          error: 'USER_NOT_FOUND'
+        });
+      }
+      
+      // Error genérico
+      return res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor',
+        error: 'INTERNAL_ERROR'
+      });
+    }
+  });
+
+  /**
    * @desc    Verificar código OTP para 2FA
    * @route   POST /api/auth/verify-otp
    * @access  Public

@@ -122,6 +122,57 @@ router.post('/login', validateSchema(loginSchema), authController.login);
 
 /**
  * @swagger
+ * /api/auth/mobile-auth:
+ *   post:
+ *     summary: Autenticación móvil completa (login + 2FA)
+ *     tags: [Auth]
+ *     description: Endpoint unificado para manejar login inicial y verificación 2FA en aplicaciones móviles
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             oneOf:
+ *               - type: object
+ *                 required: [email, password]
+ *                 properties:
+ *                   email:
+ *                     type: string
+ *                     format: email
+ *                   password:
+ *                     type: string
+ *               - type: object
+ *                 required: [userId, otpCode]
+ *                 properties:
+ *                   userId:
+ *                     type: string
+ *                   otpCode:
+ *                     type: string
+ *     responses:
+ *       200:
+ *         description: Autenticación exitosa o requiere 2FA
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 requires2FA:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *       401:
+ *         description: Credenciales inválidas o OTP incorrecto
+ *       400:
+ *         description: Parámetros inválidos
+ */
+router.post('/mobile-auth', authController.mobileAuth);
+
+/**
+ * @swagger
  * /api/auth/refresh-token:
  *   post:
  *     summary: Refrescar access token
