@@ -305,6 +305,9 @@ router.post('/logout-session', authenticateToken, authController.logout);
  */
 router.post('/verify-otp', authController.verifyOTP);
 
+// Debug temporal - remover en producción
+router.post('/debug-otp', authController.debugOTP);
+
 /**
  * @swagger
  * /api/auth/resend-otp:
