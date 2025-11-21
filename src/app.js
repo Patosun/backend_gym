@@ -31,31 +31,9 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// CORS configuration
+// CORS configuration - Allow all origins
 const corsOptions = {
-  origin: function (origin, callback) {
-    // Permitir peticiones sin origen (ej: aplicaciones móviles)
-    if (!origin) return callback(null, true);
-    
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:3001', 
-      'http://localhost:5173',
-      'http://localhost:5174',
-      process.env.CORS_ORIGIN
-    ].filter(Boolean);
-
-    if (process.env.NODE_ENV === 'development') {
-      // En desarrollo, ser más permisivo
-      return callback(null, true);
-    }
-
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    
-    callback(new Error('No permitido por CORS'));
-  },
+  origin: true, // Permitir todos los orígenes
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: [
     'Content-Type', 
