@@ -42,7 +42,7 @@ const corsOptions = {
     'Accept',
     'Origin'
   ],
-  credentials: true,
+  credentials: false ,
   optionsSuccessStatus: 200,
   preflightContinue: false
 };
@@ -51,7 +51,7 @@ app.use(cors(corsOptions));
 
 // Manejar preflight requests
 app.options('*', (req, res) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
   res.header('Access-Control-Allow-Credentials', 'true');
