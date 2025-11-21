@@ -1,9 +1,7 @@
 const authService = require('./authService');
 const twoFactorService = require('../../services/twoFactorService');
 const { asyncHandler } = require('../../middlewares/validation');
-const { PrismaClient } = require('@prisma/client');
 
-const prisma = new PrismaClient();
 
 class AuthController {
   /**
