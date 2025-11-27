@@ -8,6 +8,7 @@ const cookieParser = require('cookie-parser');
 
 // Middlewares
 const { errorHandler, notFound, sanitizeInput, requestLogger } = require('./middlewares/validation');
+const { auditMiddleware } = require('./middlewares/audit');
 
 // Routes
 const authRoutes = require('./modules/auth/authRoutes');
@@ -19,6 +20,7 @@ const paymentRoutes = require('./modules/payments/paymentRoutes');
 const classRoutes = require('./modules/classes/classRoutes');
 const checkInRoutes = require('./modules/checkins/checkInRoutes');
 const reportRoutes = require('./modules/reports/reportRoutes');
+const auditRoutes = require('./modules/audit/auditRoutes');
 const dashboardRoutes = require('./modules/dashboard/dashboardRoutes');
 
 const app = express();
@@ -86,6 +88,11 @@ app.use(requestLogger);
 // Input sanitization
 app.use(sanitizeInput);
 
+// Audit middleware - registra automáticamente las acciones
+app.use(auditMiddleware({
+  exclude: ['/health', '/api-docs', '/api/auth/refresh', '/api-docs.json']
+}));
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({
@@ -112,6 +119,7 @@ app.use(`${API_PREFIX}/classes`, classRoutes);
 app.use(`${API_PREFIX}/checkins`, checkInRoutes);
 app.use(`${API_PREFIX}/reports`, reportRoutes);
 app.use(`${API_PREFIX}/dashboard`, dashboardRoutes);
+app.use(`${API_PREFIX}/audit`, auditRoutes);
 
 // Welcome route
 app.get('/', (req, res) => {
