@@ -9,7 +9,6 @@ const cookieParser = require('cookie-parser');
 // Middlewares
 const { errorHandler, notFound, sanitizeInput, requestLogger } = require('./middlewares/validation');
 const { auditMiddleware } = require('./middlewares/audit');
-const { auditMiddleware } = require('./middlewares/audit');
 
 // Routes
 const authRoutes = require('./modules/auth/authRoutes');
@@ -21,7 +20,6 @@ const paymentRoutes = require('./modules/payments/paymentRoutes');
 const classRoutes = require('./modules/classes/classRoutes');
 const checkInRoutes = require('./modules/checkins/checkInRoutes');
 const reportRoutes = require('./modules/reports/reportRoutes');
-const auditRoutes = require('./modules/audit/auditRoutes');
 const auditRoutes = require('./modules/audit/auditRoutes');
 const dashboardRoutes = require('./modules/dashboard/dashboardRoutes');
 
