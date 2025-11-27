@@ -1,6 +1,7 @@
 const userService = require('./userService');
 const authService = require('../auth/authService');
 const { z } = require('zod');
+const { audit } = require('../../middlewares/audit');
 
 /**
  * @swagger
@@ -262,6 +263,7 @@ const userController = {
         },
         message: 'Usuario creado exitosamente'
       });
+      await audit.create(req, 'User', result.user.id, result.user);
 
     } catch (error) {
       if (error.name === 'ZodError') {
@@ -491,6 +493,7 @@ const userController = {
       }
 
       const user = await userService.updateUser(id, validatedData);
+      await audit.update(req, 'User', user.id, null, user);
       res.json(user);
     } catch (error) {
       if (error.name === 'ZodError') {

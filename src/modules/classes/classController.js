@@ -1,5 +1,6 @@
 const classService = require('./classService');
 const { z } = require('zod');
+const { audit } = require('../../middlewares/audit');
 
 /**
  * @swagger
@@ -324,6 +325,9 @@ const classController = {
 
       const newClass = await classService.createClass(classData);
       
+      // Llamada a auditoría manual
+      await audit.create(req, 'Class', newClass.id, newClass);
+      
       res.status(201).json(newClass);
     } catch (error) {
       if (error.name === 'ZodError') {
@@ -454,6 +458,8 @@ const classController = {
       }
 
       const updatedClass = await classService.updateClass(id, validatedData);
+
+      await audit.update(req, 'Class', updatedClass.id, null, updatedClass);
       res.json(updatedClass);
     } catch (error) {
       if (error.name === 'ZodError') {

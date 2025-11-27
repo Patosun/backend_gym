@@ -94,13 +94,9 @@ app.use(auditMiddleware({
     '/health',
     '/api-docs',
     '/api-docs.json',
-    '/favicon.ico'
+    '/favicon.ico',
+    '/api/auth/refresh-token'
   ]
-}));
-
-// Audit middleware - registra automáticamente las acciones
-app.use(auditMiddleware({
-  exclude: ['/health', '/api-docs', '/api/auth/refresh', '/api-docs.json']
 }));
 
 // Health check endpoint

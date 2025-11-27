@@ -17,17 +17,27 @@ const auditMiddleware = (options = {}) => {
     const path = req.path;
 
     // Capturar la respuesta para auditoría
-    res.json = function(data) {
+    res.json = function (data) {
       const duration = Date.now() - startTime;
       const statusCode = res.statusCode;
 
       // Solo auditar operaciones exitosas de modificación
       if (statusCode >= 200 && statusCode < 300 && shouldAudit(method, path, options)) {
+        // Log para debug
+        console.log(`[AUDIT] ${method} ${path} - Status: ${statusCode} - User: ${userId}`);
+
         // Ejecutar auditoría de forma asíncrona sin bloquear la respuesta
         setImmediate(() => {
           try {
             const auditData = extractAuditData(req, data, method, path);
             if (auditData) {
+              console.log('[AUDIT] Datos a registrar:', {
+                userId,
+                action: auditData.action,
+                entity: auditData.entity,
+                entityId: auditData.entityId
+              });
+
               auditService.log({
                 userId,
                 action: auditData.action,
@@ -37,7 +47,11 @@ const auditMiddleware = (options = {}) => {
                 newValues: auditData.newValues,
                 ipAddress,
                 userAgent
+              }).catch(err => {
+                console.error('[AUDIT] Error guardando log:', err);
               });
+            } else {
+              console.log('[AUDIT] No se extrajeron datos para:', method, path);
             }
           } catch (error) {
             console.error('Error en auditoría automática:', error);
@@ -78,7 +92,7 @@ function shouldAudit(method, path, options) {
  */
 function extractAuditData(req, responseData, method, path) {
   const pathParts = path.split('/').filter(p => p);
-  
+
   // Determinar entidad y acción basado en la ruta
   let entity = null;
   let action = null;
@@ -115,30 +129,41 @@ function extractAuditData(req, responseData, method, path) {
   switch (method) {
     case 'POST':
       action = 'CREATE';
-      newValues = req.body;
+      newValues = sanitizeAuditData(req.body);
       // Intentar obtener ID de la respuesta
-      if (responseData && responseData.data && responseData.data.id) {
-        entityId = responseData.data.id;
-      } else if (responseData && responseData.id) {
-        entityId = responseData.id;
+      if (responseData) {
+        if (responseData.data?.id) {
+          entityId = responseData.data.id;
+        } else if (responseData.id) {
+          entityId = responseData.id;
+        } else if (responseData.user?.id) {
+          entityId = responseData.user.id;
+        } else if (responseData.member?.id) {
+          entityId = responseData.member.id;
+        } else if (responseData.payment?.id) {
+          entityId = responseData.payment.id;
+        } else if (responseData.class?.id) {
+          entityId = responseData.class.id;
+        } else if (responseData.reservation?.id) {
+          entityId = responseData.reservation.id;
+        }
       }
       break;
-    
+
     case 'PUT':
     case 'PATCH':
       action = 'UPDATE';
       entityId = req.params.id;
-      newValues = req.body;
-      // oldValues se obtendría del before-hook si estuviera implementado
+      newValues = sanitizeAuditData(req.body);
       break;
-    
+
     case 'DELETE':
       action = 'DELETE';
       entityId = req.params.id;
       break;
   }
 
-  // Casos especiales
+  // Casos especiales por ruta
   if (path.includes('/login')) {
     entity = 'Auth';
     action = 'LOGIN';
@@ -172,21 +197,37 @@ function extractAuditData(req, responseData, method, path) {
 }
 
 /**
+ * Sanitiza datos sensibles antes de guardar en auditoría
+ */
+function sanitizeAuditData(data) {
+  if (!data) return null;
+
+  const sanitized = { ...data };
+
+  // Eliminar campos sensibles
+  delete sanitized.password;
+  delete sanitized.otpSecret;
+  delete sanitized.otpCode;
+
+  return sanitized;
+}
+
+/**
  * Middleware específico para auditar autenticación
  */
 const auditAuth = (action) => {
   return async (req, res, next) => {
     const originalJson = res.json.bind(res);
-    
-    res.json = function(data) {
+
+    res.json = function (data) {
       const statusCode = res.statusCode;
-      
+
       if (statusCode >= 200 && statusCode < 300) {
         setImmediate(() => {
           const ipAddress = req.ip || req.connection.remoteAddress;
           const userAgent = req.headers['user-agent'];
           const userId = req.user?.id || data?.user?.id || null;
-          
+
           auditService.logAuth(
             userId,
             action,
@@ -199,10 +240,10 @@ const auditAuth = (action) => {
           );
         });
       }
-      
+
       return originalJson(data);
     };
-    
+
     next();
   };
 };
@@ -218,7 +259,7 @@ const audit = {
     const ipAddress = req.ip || req.connection.remoteAddress;
     const userAgent = req.headers['user-agent'];
     const userId = req.user?.id;
-    
+
     return auditService.logCreate(
       userId,
       entity,
@@ -236,7 +277,7 @@ const audit = {
     const ipAddress = req.ip || req.connection.remoteAddress;
     const userAgent = req.headers['user-agent'];
     const userId = req.user?.id;
-    
+
     return auditService.logUpdate(
       userId,
       entity,
@@ -255,7 +296,7 @@ const audit = {
     const ipAddress = req.ip || req.connection.remoteAddress;
     const userAgent = req.headers['user-agent'];
     const userId = req.user?.id;
-    
+
     return auditService.logDelete(
       userId,
       entity,
@@ -273,7 +314,7 @@ const audit = {
     const ipAddress = req.ip || req.connection.remoteAddress;
     const userAgent = req.headers['user-agent'];
     const userId = req.user?.id;
-    
+
     return auditService.logCustomEvent(
       userId,
       action,

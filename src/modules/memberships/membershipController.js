@@ -1,5 +1,6 @@
 const membershipService = require('./membershipService');
 const { z } = require('zod');
+const { audit } = require('../../middlewares/audit');
 
 /**
  * @swagger
@@ -199,6 +200,7 @@ const membershipController = {
 
       const validatedData = createMembershipTypeSchema.parse(req.body);
       const membershipType = await membershipService.createMembershipType(validatedData);
+      await audit.create(req, 'MembershipType', membershipType.id, membershipType);
       
       res.status(201).json(membershipType);
     } catch (error) {
@@ -294,6 +296,7 @@ const membershipController = {
       const validatedData = updateMembershipTypeSchema.parse(req.body);
 
       const membershipType = await membershipService.updateMembershipType(id, validatedData);
+      await audit.update(req, 'MembershipType', membershipType.id, null, membershipType);
       res.json(membershipType);
     } catch (error) {
       if (error.name === 'ZodError') {
@@ -393,6 +396,7 @@ const membershipController = {
 
       const validatedData = createMembershipSchema.parse(req.body);
       const membership = await membershipService.createMembership(validatedData);
+      await audit.create(req, 'Membership', membership.id, membership);
       
       res.status(201).json(membership);
     } catch (error) {
@@ -496,6 +500,7 @@ const membershipController = {
       const validatedData = updateMembershipSchema.parse(req.body);
 
       const membership = await membershipService.updateMembership(id, validatedData);
+      await audit.update(req, 'Membership', membership.id, null, membership);
       res.json(membership);
     } catch (error) {
       if (error.name === 'ZodError') {

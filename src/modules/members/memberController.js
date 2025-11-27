@@ -1,5 +1,6 @@
 const memberService = require('./memberService');
 const { z } = require('zod');
+const { audit } = require('../../middlewares/audit');
 
 /**
  * @swagger
@@ -214,6 +215,7 @@ const memberController = {
 
       const validatedData = createMemberSchema.parse(req.body);
       const member = await memberService.createMember(validatedData);
+      await audit.create(req, 'Member', member.id, member);
       
       res.status(201).json(member);
     } catch (error) {
@@ -411,6 +413,7 @@ const memberController = {
       }
 
       const member = await memberService.updateMember(id, validatedData);
+      await audit.update(req, 'Member', member.id, null, member);
       res.json(member);
     } catch (error) {
       if (error.name === 'ZodError') {

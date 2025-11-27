@@ -1,7 +1,6 @@
 const express = require('express');
 const { authenticateToken, authorize } = require('../../middlewares/auth');
 const { validateSchema } = require('../../middlewares/validation');
-const { audit } = require('../../middlewares/audit');
 const classController = require('./classController');
 const {
   classCreateSchema,

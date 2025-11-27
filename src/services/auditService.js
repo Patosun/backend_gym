@@ -22,6 +22,13 @@ const auditService = {
    */
   async log(auditData) {
     try {
+      console.log('[AUDIT SERVICE] Intentando crear log:', {
+        userId: auditData.userId,
+        action: auditData.action,
+        entity: auditData.entity,
+        entityId: auditData.entityId
+      });
+
       const log = await prisma.auditLog.create({
         data: {
           userId: auditData.userId || null,
@@ -36,9 +43,10 @@ const auditService = {
         }
       });
 
+      console.log('[AUDIT SERVICE] Log creado exitosamente:', log.id);
       return log;
     } catch (error) {
-      console.error('Error al crear log de auditoría:', error);
+      console.error('[AUDIT SERVICE] Error al crear log de auditoría:', error);
       // No lanzamos el error para no interrumpir el flujo principal
       return null;
     }

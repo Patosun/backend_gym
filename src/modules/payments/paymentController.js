@@ -1,5 +1,6 @@
 const paymentService = require('./paymentService');
 const { z } = require('zod');
+const { audit } = require('../../middlewares/audit');
 
 /**
  * @swagger
@@ -255,6 +256,7 @@ const paymentController = {
 
       console.log('About to call paymentService.createPayment...');
       const payment = await paymentService.createPayment(validatedData);
+      await audit.create(req, 'Payment', payment.id, payment);
       console.log('Payment created successfully:', payment.id);
       
       res.status(201).json(payment);
@@ -377,6 +379,7 @@ const paymentController = {
       }
 
       const payment = await paymentService.updatePayment(id, validatedData);
+      await audit.update(req, 'Payment', payment.id, null, payment);
       res.json(payment);
     } catch (error) {
       if (error.name === 'ZodError') {

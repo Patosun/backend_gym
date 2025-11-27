@@ -1,6 +1,7 @@
 const checkInService = require('./checkInService');
 const { asyncHandler } = require('../../middlewares/validation');
 const prisma = require('../../config/prisma');
+const { audit } = require('../../middlewares/audit');
 
 class CheckInController {
   /**
@@ -11,6 +12,7 @@ class CheckInController {
   checkIn = asyncHandler(async (req, res) => {
     const { qrCode, branchId } = req.body;
     const checkIn = await checkInService.checkIn(qrCode, branchId);
+    await audit.create(req, 'CheckIn', checkIn.id, checkIn);
     
     res.status(201).json({
       success: true,
@@ -29,6 +31,7 @@ class CheckInController {
     const { notes } = req.body;
     
     const checkIn = await checkInService.checkOut(id, notes);
+    await audit.update(req, 'CheckIn', checkIn.id, null, checkIn);
     
     res.json({
       success: true,
@@ -153,6 +156,7 @@ class CheckInController {
   adminCheckIn = asyncHandler(async (req, res) => {
     const { memberId, branchId } = req.body;
     const checkIn = await checkInService.adminCheckIn(memberId, branchId);
+    await audit.create(req, 'CheckIn', checkIn.id, checkIn);
     
     res.status(201).json({
       success: true,
@@ -169,6 +173,7 @@ class CheckInController {
   adminCheckOut = asyncHandler(async (req, res) => {
     const { memberId } = req.body;
     const checkIn = await checkInService.adminCheckOut(memberId);
+    await audit.update(req, 'CheckIn', checkIn.id, null, checkIn);
     
     res.json({
       success: true,

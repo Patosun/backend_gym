@@ -1,5 +1,6 @@
 const branchService = require('./branchService');
 const { asyncHandler } = require('../../middlewares/validation');
+const { audit } = require('../../middlewares/audit');
 
 class BranchController {
   /**
@@ -9,6 +10,7 @@ class BranchController {
    */
   createBranch = asyncHandler(async (req, res) => {
     const branch = await branchService.createBranch(req.body, req.user.id);
+    await audit.create(req, 'Branch', branch.id, branch);
     
     res.status(201).json({
       success: true,
@@ -52,6 +54,7 @@ class BranchController {
    */
   updateBranch = asyncHandler(async (req, res) => {
     const branch = await branchService.updateBranch(req.params.id, req.body);
+    await audit.update(req, 'Branch', branch.id, null, branch);
     
     res.json({
       success: true,
