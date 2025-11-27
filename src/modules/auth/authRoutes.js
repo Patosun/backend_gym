@@ -2,6 +2,7 @@ const express = require('express');
 const authController = require('./authController');
 const { authenticateToken, authorize } = require('../../middlewares/auth');
 const { validateSchema } = require('../../middlewares/validation');
+const { auditAuth } = require('../../middlewares/audit');
 const {
   userCreateSchema,
   loginSchema,
@@ -89,7 +90,7 @@ if (process.env.NODE_ENV === 'development') {
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
-router.post('/register', validateSchema(userCreateSchema), authController.register);
+router.post('/register', validateSchema(userCreateSchema), auditAuth('REGISTER'), authController.register);
 
 /**
  * @swagger
@@ -118,7 +119,7 @@ router.post('/register', validateSchema(userCreateSchema), authController.regist
  *       401:
  *         description: Credenciales inválidas
  */
-router.post('/login', validateSchema(loginSchema), authController.login);
+router.post('/login', validateSchema(loginSchema), auditAuth('LOGIN'), authController.login);
 
 /**
  * @swagger
@@ -198,7 +199,7 @@ router.post('/refresh-token', authController.refreshToken);
  *       400:
  *         description: No hay refresh token
  */
-router.post('/logout', authController.logout);
+router.post('/logout', auditAuth('LOGOUT'), authController.logout);
 
 /**
  * @swagger
@@ -213,7 +214,7 @@ router.post('/logout', authController.logout);
  *       400:
  *         description: No hay refresh token
  */
-router.post('/logout-all', authController.logoutAll);
+router.post('/logout-all', auditAuth('LOGOUT_ALL'), authController.logoutAll);
 
 /**
  * @swagger
@@ -291,7 +292,7 @@ router.put('/profile', authenticateToken, validateSchema(userUpdateSchema), auth
  *       401:
  *         description: No autorizado
  */
-router.put('/change-password', authenticateToken, authController.changePassword);
+router.put('/change-password', authenticateToken, auditAuth('CHANGE_PASSWORD'), authController.changePassword);
 
 /**
  * @swagger
@@ -395,7 +396,7 @@ router.post('/resend-otp', authController.resendOTP);
  *       200:
  *         description: 2FA habilitado exitosamente
  */
-router.post('/enable-2fa', authenticateToken, authController.enable2FA);
+router.post('/enable-2fa', authenticateToken, auditAuth('ENABLE_2FA'), authController.enable2FA);
 
 /**
  * @swagger
@@ -409,7 +410,7 @@ router.post('/enable-2fa', authenticateToken, authController.enable2FA);
  *       200:
  *         description: 2FA deshabilitado exitosamente
  */
-router.post('/disable-2fa', authenticateToken, authController.disable2FA);
+router.post('/disable-2fa', authenticateToken, auditAuth('DISABLE_2FA'), authController.disable2FA);
 
 /**
  * @swagger
@@ -492,7 +493,7 @@ router.post('/verify-reset-token', authController.verifyResetToken);
  *       400:
  *         description: Token o contraseña inválidos
  */
-router.post('/reset-password', authController.resetPassword);
+router.post('/reset-password', auditAuth('RESET_PASSWORD'), authController.resetPassword);
 
 /**
  * @swagger

@@ -2,6 +2,7 @@ const express = require('express');
 const checkInController = require('./checkInController');
 const { authenticateToken, authorize } = require('../../middlewares/auth');
 const { validateSchema } = require('../../middlewares/validation');
+const { audit } = require('../../middlewares/audit');
 const {
   checkInCreateSchema,
   checkOutSchema,

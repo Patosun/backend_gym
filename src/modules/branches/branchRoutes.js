@@ -2,6 +2,7 @@ const express = require('express');
 const branchController = require('./branchController');
 const { authenticateToken, authorize } = require('../../middlewares/auth');
 const { validateSchema } = require('../../middlewares/validation');
+const { audit } = require('../../middlewares/audit');
 const {
   branchCreateSchema,
   branchUpdateSchema,

@@ -1,6 +1,8 @@
 const express = require('express');
 const membershipController = require('./membershipController');
 const { authenticateToken, authorize } = require('../../middlewares/auth');
+const { validateSchema } = require('../../middlewares/validation');
+const { audit } = require('../../middlewares/audit');
 
 const router = express.Router();
 

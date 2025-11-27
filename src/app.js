@@ -9,6 +9,7 @@ const cookieParser = require('cookie-parser');
 // Middlewares
 const { errorHandler, notFound, sanitizeInput, requestLogger } = require('./middlewares/validation');
 const { auditMiddleware } = require('./middlewares/audit');
+const { auditMiddleware } = require('./middlewares/audit');
 
 // Routes
 const authRoutes = require('./modules/auth/authRoutes');
@@ -20,6 +21,7 @@ const paymentRoutes = require('./modules/payments/paymentRoutes');
 const classRoutes = require('./modules/classes/classRoutes');
 const checkInRoutes = require('./modules/checkins/checkInRoutes');
 const reportRoutes = require('./modules/reports/reportRoutes');
+const auditRoutes = require('./modules/audit/auditRoutes');
 const auditRoutes = require('./modules/audit/auditRoutes');
 const dashboardRoutes = require('./modules/dashboard/dashboardRoutes');
 
@@ -87,6 +89,16 @@ app.use(requestLogger);
 
 // Input sanitization
 app.use(sanitizeInput);
+
+// Audit middleware - registra todas las operaciones de modificación
+app.use(auditMiddleware({
+  exclude: [
+    '/health',
+    '/api-docs',
+    '/api-docs.json',
+    '/favicon.ico'
+  ]
+}));
 
 // Audit middleware - registra automáticamente las acciones
 app.use(auditMiddleware({

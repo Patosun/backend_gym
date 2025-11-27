@@ -2,6 +2,7 @@ const express = require('express');
 const reportController = require('./reportController');
 const { authenticateToken, authorize } = require('../../middlewares/auth');
 const { validateSchema } = require('../../middlewares/validation');
+const { audit } = require('../../middlewares/audit');
 const { dateRangeSchema } = require('../../utils/zodSchemas');
 
 const router = express.Router();
