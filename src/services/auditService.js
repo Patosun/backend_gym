@@ -148,6 +148,9 @@ const auditService = {
     const [logs, total] = await Promise.all([
       prisma.auditLog.findMany({
         where: whereClause,
+        include: {
+          user: true
+        },
         skip,
         take: limit,
         orderBy: { timestamp: 'desc' }
