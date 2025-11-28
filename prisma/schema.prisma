@@ -81,6 +81,7 @@ model User {
   createdBranches Branch[] @relation("CreatedBy")
   refreshTokens RefreshToken[]
   passwordResetTokens PasswordResetToken[]
+  auditLogs     AuditLog[]
 
   @@map("users")
 }
@@ -339,6 +340,9 @@ model AuditLog {
   timestamp DateTime @default(now())
   ipAddress String?
   userAgent String?
+
+  // Relations
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@map("audit_logs")
 }

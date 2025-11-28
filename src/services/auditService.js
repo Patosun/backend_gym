@@ -150,7 +150,17 @@ const auditService = {
         where: whereClause,
         skip,
         take: limit,
-        orderBy: { timestamp: 'desc' }
+        orderBy: { timestamp: 'desc' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true
+            }
+          }
+        }
       }),
       prisma.auditLog.count({ where: whereClause })
     ]);
