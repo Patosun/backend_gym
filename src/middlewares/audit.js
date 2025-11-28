@@ -22,7 +22,8 @@ const auditMiddleware = (options = {}) => {
       const statusCode = res.statusCode;
 
       // Solo auditar operaciones exitosas de modificación
-      if (statusCode >= 200 && statusCode < 300 && shouldAudit(method, path, options)) {
+      // Verificar si ya se auditó manualmente para evitar duplicados
+      if (statusCode >= 200 && statusCode < 300 && shouldAudit(method, path, options) && !req.audited) {
         // Log para debug
         console.log(`[AUDIT] ${method} ${path} - Status: ${statusCode} - User: ${userId}`);
 
@@ -57,6 +58,8 @@ const auditMiddleware = (options = {}) => {
             console.error('Error en auditoría automática:', error);
           }
         });
+      } else if (req.audited) {
+        console.log(`[AUDIT] Omitiendo registro automático - ya auditado manualmente: ${method} ${path}`);
       }
 
       // Enviar respuesta original
@@ -260,6 +263,9 @@ const audit = {
     const userAgent = req.headers['user-agent'];
     const userId = req.user?.id;
 
+    // Marcar como auditado para evitar duplicado del middleware
+    req.audited = true;
+
     return auditService.logCreate(
       userId,
       entity,
@@ -277,6 +283,9 @@ const audit = {
     const ipAddress = req.ip || req.connection.remoteAddress;
     const userAgent = req.headers['user-agent'];
     const userId = req.user?.id;
+
+    // Marcar como auditado para evitar duplicado del middleware
+    req.audited = true;
 
     return auditService.logUpdate(
       userId,
@@ -297,6 +306,9 @@ const audit = {
     const userAgent = req.headers['user-agent'];
     const userId = req.user?.id;
 
+    // Marcar como auditado para evitar duplicado del middleware
+    req.audited = true;
+
     return auditService.logDelete(
       userId,
       entity,
@@ -314,6 +326,9 @@ const audit = {
     const ipAddress = req.ip || req.connection.remoteAddress;
     const userAgent = req.headers['user-agent'];
     const userId = req.user?.id;
+
+    // Marcar como auditado para evitar duplicado del middleware
+    req.audited = true;
 
     return auditService.logCustomEvent(
       userId,
