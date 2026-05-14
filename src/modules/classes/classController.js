@@ -244,6 +244,10 @@ const classController = {
         limit = 10 
       } = req.query;
       
+      // Validar y limitar el límite máximo para evitar problemas de rendimiento
+      const parsedLimit = Math.min(parseInt(limit) || 10, 100); // Máximo 100 registros (coincide con validación)
+      const parsedPage = Math.max(parseInt(page) || 1, 1); // Mínimo página 1
+      
       const filters = {};
       if (branchId) filters.branchId = branchId;
       if (trainerId) filters.trainerId = trainerId;
@@ -251,7 +255,7 @@ const classController = {
       if (startDate) filters.startDate = new Date(startDate);
       if (endDate) filters.endDate = new Date(endDate);
 
-      const result = await classService.getAllClasses(filters, parseInt(page), parseInt(limit));
+      const result = await classService.getAllClasses(filters, parsedPage, parsedLimit);
       res.json(result);
     } catch (error) {
       console.error('Error getting classes:', error);
